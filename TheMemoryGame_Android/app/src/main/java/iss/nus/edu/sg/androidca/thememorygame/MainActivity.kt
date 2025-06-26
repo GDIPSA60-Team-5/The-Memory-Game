@@ -1,5 +1,6 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Button
@@ -13,13 +14,19 @@ import org.jsoup.Jsoup
 import java.io.File
 import java.net.URL
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import java.net.HttpURLConnection
 
 class MainActivity : AppCompatActivity() {
     val filenames = arrayOf("1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg",
         "14.jpg", "15.jpg", "16.jpg", "17.jpg", "18.jpg", "19.jpg", "20.jpg")
     lateinit var adapter: MyCustomAdapter
+    private var bgThread: Thread? = null
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -37,18 +44,15 @@ class MainActivity : AppCompatActivity() {
         adapter = MyCustomAdapter(this, filenames)
         gridView.adapter = adapter
 
-        dir?.listFiles()?.forEach { file ->
-            if (file.isFile) {
-                file.delete()
-            }
+        if (dir != null) {
+            deleteExistingImages(dir)
         }
 
         fetch.setOnClickListener {
-            Thread {
-                dir?.listFiles()?.forEach { file ->
-                    if (file.isFile) {
-                        file.delete()
-                    }
+            resetBackgroundThread()
+            bgThread = Thread {
+                if (dir != null) {
+                    deleteExistingImages(dir)
                 }
                 try {
                     val doc = Jsoup.connect(url.text.toString())
@@ -56,30 +60,49 @@ class MainActivity : AppCompatActivity() {
                         .get()
                     val imgElements = doc.select("img")
                     val httpsImgSrcs = mutableListOf<String>()
+                    val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+                    val progressText = findViewById<TextView>(R.id.progressTextView)
 
                     for (element in imgElements) {
                         val imgSrc = element.absUrl("src")
-                        if (imgSrc.startsWith("https") && !imgSrc.endsWith(".svg")  && !httpsImgSrcs.contains(imgSrc)) {
+                        if (imgSrc.startsWith("https") && !imgSrc.endsWith(".svg") && !httpsImgSrcs.contains(imgSrc)) {
                             httpsImgSrcs.add(imgSrc)
-                            if (httpsImgSrcs.size > 20) break
+                            if (httpsImgSrcs.size >= 20) break
                         }
                     }
-                    for (i in 0 until httpsImgSrcs.size) {
+
+                    val totalImages = httpsImgSrcs.size
+                    runOnUiThread {
+                        progressText.visibility = View.VISIBLE
+                        progressBar.visibility = View.VISIBLE
+                        progressBar.max = totalImages
+                        progressBar.progress = 0
+                    }
+
+                    for (i in 0 until totalImages) {
                         val fileName = "${i+1}.jpg"
                         val file = makeFile(fileName)
 
                         downloadToFile(httpsImgSrcs[i], file)
-                        Log.d("PostDownload", "Download function is called.")
 
                         runOnUiThread {
                             adapter.notifyDataSetChanged()
-                            Log.d("adapter notifyDataSetChanged", "this function is called properly!")
+                            progressText.text = "Downloading ${i+1} of $totalImages images..."
+                            progressBar.progress = i + 1
                         }
+                    }
+                    runOnUiThread {
+                        progressText.text = "Download completed! \nSelect 6 images to start the game."
+                        progressBar.visibility = View.GONE
                     }
                 } catch(e: Exception) {
                     e.printStackTrace()
+                    runOnUiThread{
+                        Toast.makeText(this, e.message ?: "An error occurred", Toast.LENGTH_LONG).show()
+                    }
                 }
-            }.start()
+            }
+            bgThread?.start()
         }
     }
 
@@ -98,5 +121,18 @@ class MainActivity : AppCompatActivity() {
                 input.copyTo(output)
             }
         }
+    }
+
+    private fun deleteExistingImages(directory: File) {
+        directory.listFiles()?.forEach { file ->
+            if (file.isFile) {
+                file.delete()
+            }
+        }
+    }
+
+    private fun resetBackgroundThread() {
+        bgThread?.interrupt()
+        bgThread = null
     }
 }

@@ -9,7 +9,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:paddingTop="20dp"
+        android:paddingBottom="10dp"
+        android:paddingHorizontal="4dp">
 
         <EditText
             android:layout_width="0dp"
@@ -32,10 +35,38 @@
     <GridView
         android:id="@+id/imageGridView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:numColumns="4"
         android:gravity="center"
-        android:verticalSpacing="8dp"
-        android:horizontalSpacing="8dp"
+        android:verticalSpacing="4dp"
+        android:horizontalSpacing="4dp"
+        android:paddingVertical="10dp"
+        android:paddingHorizontal="4dp"
         android:stretchMode="columnWidth" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <ProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:id="@+id/progressBar"
+            android:visibility="invisible"
+            android:padding="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressTextView"
+            android:visibility="invisible"
+            android:layout_gravity="center"
+            android:textSize="17sp"
+            android:textColor="@color/black"
+            android:padding="10dp"
+            android:textAlignment="center" />
+    </LinearLayout>
 </LinearLayout>

@@ -1,8 +1,7 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
 import android.annotation.SuppressLint
-import android.graphics.Color
-import android.graphics.Typeface
+import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Button
@@ -17,12 +16,12 @@ import java.io.File
 import java.net.URL
 import android.util.Log
 import android.view.View
-import android.widget.Adapter
 import android.widget.AdapterView
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import kotlinx.coroutines.selects.select
 import java.net.HttpURLConnection
 
 class MainActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
@@ -95,6 +94,18 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                             adapter.notifyDataSetChanged()
                             progressText.text = "Downloading ${i+1} of $totalImages images..."
                             progressBar.progress = i + 1
+
+                            for (j: Int in selectedPositions) {
+                                val child = gridView.getChildAt(j)
+                                val imageView = child.findViewById<ImageView>(R.id.imageView)
+                                val tickView = child.findViewById<ImageView>(R.id.tickView)
+
+                                imageView.alpha = 1.0f
+                                imageView.scaleX = 1.0f
+                                imageView.scaleY = 1.0f
+                                tickView?.visibility = View.GONE
+                            }
+                            selectedPositions.clear()
                         }
                     }
                     runOnUiThread {
@@ -113,10 +124,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         gridView.onItemClickListener = this
     }
 
-    private fun makeFile(fname: String) : File {
+    private fun makeFile(filename: String) : File {
         val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         Log.d("makeFile fun", "makeFile works!")
-        return File(dir, fname)
+        return File(dir, filename)
     }
 
     private fun downloadToFile(url: String, file: File) {
@@ -160,16 +171,25 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             imageView?.scaleY = 1.0f
             tickView?.visibility = View.GONE
         } else {
-            if (selectedPositions.size == 6) {
-                Toast.makeText(this, "You can select only 6 images", Toast.LENGTH_SHORT).show()
-                return
-            }
             // Select the image
             selectedPositions.add(pos)
             imageView?.alpha = 0.5f
             imageView?.scaleX = 1.1f
             imageView?.scaleY = 1.1f
             tickView?.visibility = View.VISIBLE
+
+            if (selectedPositions.size == 6) {
+                Toast.makeText(this, "Game is starting...", Toast.LENGTH_SHORT).show()
+                // get file names of the selected positions
+                val selectedFileNames = selectedPositions.map { filenames[it] }.toList().shuffled()
+                val pairedFileNames = (selectedFileNames + selectedFileNames).shuffled()
+                val intent = Intent(this, PlayActivity::class.java)
+                intent.putExtra("filenames", pairedFileNames.toTypedArray())
+                // play game
+                startActivity(intent)
+                finish()
+                return
+            }
         }
     }
 }

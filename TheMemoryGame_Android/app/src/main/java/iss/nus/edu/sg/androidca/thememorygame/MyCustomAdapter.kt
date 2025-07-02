@@ -26,8 +26,10 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
         if (file.exists()) {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
             imgView.setImageBitmap(bitmap)
+            imgView.tag = "real_image"
         } else {
             imgView.setImageResource(R.drawable.placeholder)
+            imgView.tag = "placeholder"
         }
 
         return view

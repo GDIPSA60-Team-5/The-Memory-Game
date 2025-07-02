@@ -1,6 +1,8 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
 import android.annotation.SuppressLint
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Button
@@ -15,16 +17,20 @@ import java.io.File
 import java.net.URL
 import android.util.Log
 import android.view.View
+import android.widget.Adapter
+import android.widget.AdapterView
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import java.net.HttpURLConnection
 
-class MainActivity : AppCompatActivity() {
-    val filenames = arrayOf("1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg",
+class MainActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
+    private val filenames = arrayOf("1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg",
         "14.jpg", "15.jpg", "16.jpg", "17.jpg", "18.jpg", "19.jpg", "20.jpg")
-    lateinit var adapter: MyCustomAdapter
+    private lateinit var adapter: MyCustomAdapter
     private var bgThread: Thread? = null
+    private var selectedPositions = mutableSetOf<Int>()
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -104,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             }
             bgThread?.start()
         }
+        gridView.onItemClickListener = this
     }
 
     private fun makeFile(fname: String) : File {
@@ -134,5 +141,35 @@ class MainActivity : AppCompatActivity() {
     private fun resetBackgroundThread() {
         bgThread?.interrupt()
         bgThread = null
+    }
+
+    override fun onItemClick(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+        val imageView = view?.findViewById<ImageView>(R.id.imageView)
+        val tickView = view?.findViewById<ImageView>(R.id.tickView)
+
+        if (imageView?.tag == "placeholder") {
+            Toast.makeText(this, "Please select only real images", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (selectedPositions.contains(pos)) {
+            // Deselect the image
+            selectedPositions.remove(pos)
+            imageView?.alpha = 1.0f
+            imageView?.scaleX = 1.0f
+            imageView?.scaleY = 1.0f
+            tickView?.visibility = View.GONE
+        } else {
+            if (selectedPositions.size == 6) {
+                Toast.makeText(this, "You can select only 6 images", Toast.LENGTH_SHORT).show()
+                return
+            }
+            // Select the image
+            selectedPositions.add(pos)
+            imageView?.alpha = 0.5f
+            imageView?.scaleX = 1.1f
+            imageView?.scaleY = 1.1f
+            tickView?.visibility = View.VISIBLE
+        }
     }
 }

@@ -3,4 +3,6 @@
     <string name="fetch">fetch</string>
     <string name="enter_the_url_to_fetch_images">Enter the URL to fetch images</string>
     <string name="download_progress_text">Downloading 0 of 20 images...</string>
+    <string name="initial_match">0/6 matches</string>
+    <string name="initial_timer_value">00:00:00</string>
 </resources>

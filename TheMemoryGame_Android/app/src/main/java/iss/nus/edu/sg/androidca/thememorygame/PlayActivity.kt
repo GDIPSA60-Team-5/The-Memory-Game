@@ -1,10 +1,15 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.GridView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -14,7 +19,12 @@ import androidx.core.view.WindowInsetsCompat
 class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private lateinit var adapter: MyCustomAdapter
+    private var startTime = 0L
+    private var running = false
+    private lateinit var timerHandler: Handler
+    private lateinit var timerRunnable: Runnable
 
+    @SuppressLint("DefaultLocale")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -23,6 +33,25 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+        }
+
+        // Initialize a timer object
+        timerHandler = Handler(Looper.getMainLooper())
+
+        timerRunnable = Runnable {
+            @SuppressLint("DefaultLocale")
+            val elapsedMillis = SystemClock.elapsedRealtime() - startTime
+            val centiSeconds = (elapsedMillis / 10).toInt()
+            val seconds = centiSeconds / 100
+            val minutes = seconds / 60
+            val remainingSeconds = seconds % 60
+            val remainingCentiSeconds = centiSeconds % 100
+
+            val timerText = findViewById<TextView>(R.id.timer)
+            timerText.text = String.format("%02d:%02d:%02d", minutes, remainingSeconds, remainingCentiSeconds)
+
+            // Schedule the runnable to run again after 1 second
+            timerHandler.postDelayed(timerRunnable, 10)
         }
 
         val gridView = findViewById<GridView>(R.id.playGridView)
@@ -40,23 +69,38 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         if (!::adapter.isInitialized) return
+
+        // Run the timer at the first click on item
+        if (!running) {
+            startTime = SystemClock.elapsedRealtime()
+            timerHandler.post(timerRunnable)
+            running = true
+        }
 
         adapter.revealPosition(position)
 
         if (adapter.currentlyFlipped.size == 2) {
             val gridView = findViewById<GridView>(R.id.playGridView)
-            gridView.postDelayed({
-                if (adapter.checkForMatch()) {
-                    adapter.finalizeMatch()
-                } else {
+            val matches = findViewById<TextView>(R.id.matches)
+            gridView.isEnabled = false
+            if (adapter.checkForMatch()) {
+                adapter.finalizeMatch()
+                gridView.isEnabled = true
+                // Show the matches
+                matches.text = "${adapter.revealedPositions.size / 2}/6 matches"
+            }else {
+                gridView.postDelayed({
                     adapter.resetFlipped()
-                }
-            }, 1000)
+                    gridView.isEnabled = true
+                }, 800)
+            }
         }
 
         if (adapter.revealedPositions.size == adapter.count) {
+            timerHandler.removeCallbacks(timerRunnable)
             Toast.makeText(this, "You won!", Toast.LENGTH_LONG).show()
         }
     }

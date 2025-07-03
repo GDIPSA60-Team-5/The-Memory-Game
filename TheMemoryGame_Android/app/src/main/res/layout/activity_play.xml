@@ -18,14 +18,24 @@
             android:layout_height="wrap_content"
             android:layout_weight="5"
             android:gravity="start"
-            android:id="@+id/matches" />
+            android:id="@+id/matches"
+            android:padding="10dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="@string/initial_match"
+            android:textColor="@color/black" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="5"
             android:gravity="end"
-            android:id="@+id/timer" />
+            android:id="@+id/timer"
+            android:padding="10dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="@string/initial_timer_value"
+            android:textColor="@color/black" />
 
     </LinearLayout>
 

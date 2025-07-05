@@ -1,6 +1,7 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -23,8 +24,8 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private var running = false
     private lateinit var timerHandler: Handler
     private lateinit var timerRunnable: Runnable
+    private var elapsedMillis: Long = 0L
 
-    @SuppressLint("DefaultLocale")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,22 +36,15 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             insets
         }
 
-        // Initialize a timer object
+        // Initialize a timer object to set a timer
         timerHandler = Handler(Looper.getMainLooper())
 
         timerRunnable = Runnable {
-            @SuppressLint("DefaultLocale")
-            val elapsedMillis = SystemClock.elapsedRealtime() - startTime
-            val centiSeconds = (elapsedMillis / 10).toInt()
-            val seconds = centiSeconds / 100
-            val minutes = seconds / 60
-            val remainingSeconds = seconds % 60
-            val remainingCentiSeconds = centiSeconds % 100
-
+            elapsedMillis = SystemClock.elapsedRealtime() - startTime
             val timerText = findViewById<TextView>(R.id.timer)
-            timerText.text = String.format("%02d:%02d:%02d", minutes, remainingSeconds, remainingCentiSeconds)
+            timerText.text = TimeUtils.formatElapsedTime(elapsedMillis)
 
-            // Schedule the runnable to run again after 1 second
+            // Schedule the runnable to run after every 10 centi-seconds
             timerHandler.postDelayed(timerRunnable, 10)
         }
 
@@ -80,18 +74,21 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             running = true
         }
 
+        // Reveal the image if just one image is flipped (not counting matched images)
         adapter.revealPosition(position)
 
+        // If two images are flipped, then check if the images match
         if (adapter.currentlyFlipped.size == 2) {
             val gridView = findViewById<GridView>(R.id.playGridView)
             val matches = findViewById<TextView>(R.id.matches)
             gridView.isEnabled = false
+            // Show images if matched
             if (adapter.checkForMatch()) {
                 adapter.finalizeMatch()
                 gridView.isEnabled = true
-                // Show the matches
                 matches.text = "${adapter.revealedPositions.size / 2}/6 matches"
             }else {
+                // Reset images if not matched after 0.8 seconds
                 gridView.postDelayed({
                     adapter.resetFlipped()
                     gridView.isEnabled = true
@@ -99,9 +96,16 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
         }
 
+        // Stop timer and go to leaderboard activity if game is won
         if (adapter.revealedPositions.size == adapter.count) {
             timerHandler.removeCallbacks(timerRunnable)
-            Toast.makeText(this, "You won!", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "You Won!", Toast.LENGTH_SHORT).show()
+            timerHandler.postDelayed({
+                val intent = Intent(this, LeaderBoardActivity::class.java)
+                intent.putExtra("completion_time", elapsedMillis)
+                startActivity(intent)
+                finish()
+            }, 800)
         }
     }
 }

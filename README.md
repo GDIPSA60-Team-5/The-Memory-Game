@@ -139,7 +139,6 @@ git push origin your_feature_branch_name
 
 ## 💡 Final Notes
 
-* Keep your `.gitignore` clean to avoid committing unnecessary build files.
 * Communicate regularly on progress.
 * Test your features thoroughly before pushing.
 

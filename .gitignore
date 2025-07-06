@@ -1,0 +1,29 @@
+# ---- ASP.NET Core ----
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.cache
+*.log
+.vscode/
+wwwroot/dist/
+wwwroot/node_modules/
+
+# ---- Android Studio ----
+*.iml
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+.idea/
+.DS_Store
+*.jks
+*.keystore
+
+# ---- Global ----
+*.log
+*.tmp
+*.swp

@@ -1,26 +1,26 @@
 -- Insert User: Aung
-INSERT INTO User (Id, Username, UserType)
-VALUES ('11111111-1111-1111-1111-111111111111', 'Aung', 'free');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('11111111-1111-1111-1111-111111111111', 'Aung', 'aung123', 'free');
 
 -- Insert User: Haziq
-INSERT INTO User (Id, Username, UserType)
-VALUES ('22222222-2222-2222-2222-222222222222', 'Haziq', 'paid');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('22222222-2222-2222-2222-222222222222', 'Haziq', 'haziq123', 'paid');
 
 -- Insert User: Paul
-INSERT INTO User (Id, Username, UserType)
-VALUES ('33333333-3333-3333-3333-333333333333', 'Paul', 'free');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('33333333-3333-3333-3333-333333333333', 'Paul', 'paul123', 'free');
 
 -- Insert User: Jingjia
-INSERT INTO User (Id, Username, UserType)
-VALUES ('44444444-4444-4444-4444-444444444444', 'Jingjia', 'paid');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('44444444-4444-4444-4444-444444444444', 'Jingjia', 'jingjia123', 'paid');
 
 -- Insert User: Simba
-INSERT INTO User (Id, Username, UserType)
-VALUES ('55555555-5555-5555-5555-555555555555', 'Simba', 'free');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('55555555-5555-5555-5555-555555555555', 'Simba', 'simba123', 'free');
 
 -- Insert User: Zhangrui
-INSERT INTO User (Id, Username, UserType)
-VALUES ('66666666-6666-6666-6666-666666666666', 'Zhangrui', 'paid');
+INSERT INTO User (Id, Username, Password, UserType)
+VALUES ('66666666-6666-6666-6666-666666666666', 'Zhangrui', 'zhangrui123', 'paid');
 
 -- Record for Aung - 21 seconds
 INSERT INTO Record (Id, CompletionTime, UserId)

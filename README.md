@@ -51,6 +51,8 @@ Hi Team, here’s everything you need to test run the project, understand your a
 
 * Display ads inside the Play Activity **only** if the logged-in user’s `UserType` in the database is `"free"`.
 * No ads should appear for `"paid"` users.
+* For free users, show a rectangular advertisement window at the bottom of the screen.
+* A new advertisement should load every 30 seconds during gameplay.
 
 ### 5. Leaderboard Activity — **Haziq**
 

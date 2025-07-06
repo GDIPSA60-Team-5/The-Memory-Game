@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../build/TheMemoryGame_Backend.props" />
+</Project>

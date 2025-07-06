@@ -16,6 +16,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.net.URL
 
 class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
@@ -50,8 +51,7 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
         val gridView = findViewById<GridView>(R.id.playGridView)
         val filenames = intent.getStringArrayExtra("filenames")
-        Log.d("PlayActivity filenames", filenames.toString())
-
+        //
         if (filenames != null && filenames.size == 12) {
             adapter = MyCustomAdapter(this, filenames)
             gridView.adapter = adapter
@@ -99,7 +99,25 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         // Stop timer and go to leaderboard activity if game is won
         if (adapter.revealedPositions.size == adapter.count) {
             timerHandler.removeCallbacks(timerRunnable)
-            Toast.makeText(this, "You Won!", Toast.LENGTH_SHORT).show()
+            // Save completion time in database
+            val url = "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
+            Log.d("Backend Call Link: ", url);
+            Thread {
+                try {
+                    val saveResult: String = URL(url).openStream().bufferedReader().use { it.readText() }
+                    runOnUiThread {
+                        if (saveResult == "saved") {
+                            Toast.makeText(this, "Completion time saved!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "Error saving completion time.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }.start()
+
+            // Go to leaderboard
             timerHandler.postDelayed({
                 val intent = Intent(this, LeaderBoardActivity::class.java)
                 intent.putExtra("completion_time", elapsedMillis)

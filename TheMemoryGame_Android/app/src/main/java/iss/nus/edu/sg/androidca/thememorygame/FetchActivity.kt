@@ -45,9 +45,11 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val url = findViewById<EditText>(R.id.url)
 
+        // Create an adapter object first
         adapter = MyCustomAdapter(this, filenames)
         gridView.adapter = adapter
 
+        // Delete previously downloaded objects when this app is first launched
         if (dir != null) {
             deleteExistingImages(dir)
         }
@@ -55,9 +57,12 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         fetch.setOnClickListener {
             resetBackgroundThread()
             bgThread = Thread {
+                // Delete images when images are fetched from new url
                 if (dir != null) {
                     deleteExistingImages(dir)
                 }
+
+                // Download images from url
                 try {
                     val doc = Jsoup.connect(url.text.toString())
                         .userAgent("Mozilla")
@@ -67,6 +72,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                     val progressBar = findViewById<ProgressBar>(R.id.progressBar)
                     val progressText = findViewById<TextView>(R.id.progressTextView)
 
+                    // Scrape 20 image links from the html tag that starts with "src"
                     for (element in imgElements) {
                         val imgSrc = element.absUrl("src")
                         if (imgSrc.startsWith("https") && !imgSrc.endsWith(".svg") && !httpsImgSrcs.contains(imgSrc)) {
@@ -76,6 +82,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                     }
 
                     val totalImages = httpsImgSrcs.size
+                    // Show progress bar when downloading
                     runOnUiThread {
                         progressText.visibility = View.VISIBLE
                         progressBar.visibility = View.VISIBLE
@@ -83,12 +90,14 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                         progressBar.progress = 0
                     }
 
+                    // Make file with specified names (eg. 1.jpg, 2.jpg) and download images to the created files
                     for (i in 0 until totalImages) {
                         val fileName = "${i+1}.jpg"
                         val file = makeFile(fileName)
 
                         downloadToFile(httpsImgSrcs[i], file)
 
+                        // Show the images and update progress bar while downloading
                         runOnUiThread {
                             adapter.notifyDataSetChanged()
                             progressText.text = "Downloading ${i+1} of $totalImages images..."
@@ -107,6 +116,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                             selectedPositions.clear()
                         }
                     }
+                    // Change the text view after download is completed
                     runOnUiThread {
                         progressText.text = "Download completed! \nSelect 6 images to start the game."
                         progressBar.visibility = View.GONE
@@ -120,15 +130,17 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
             bgThread?.start()
         }
+        // Listen to user selection on 6 images to play
         gridView.onItemClickListener = this
     }
 
+    // Create file to store image download
     private fun makeFile(filename: String) : File {
         val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        Log.d("makeFile fun", "makeFile works!")
         return File(dir, filename)
     }
 
+    // Download images
     private fun downloadToFile(url: String, file: File) {
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.setRequestProperty("User-Agent", "Mozilla")
@@ -140,6 +152,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
+    // Delete existing images
     private fun deleteExistingImages(directory: File) {
         directory.listFiles()?.forEach { file ->
             if (file.isFile) {
@@ -148,22 +161,25 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
+    // If interrupted during fetching images, reset the fetch process
     private fun resetBackgroundThread() {
         bgThread?.interrupt()
         bgThread = null
     }
 
+    // Tick and opaque the images if being clicked
     override fun onItemClick(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
         val imageView = view?.findViewById<ImageView>(R.id.imageView)
         val tickView = view?.findViewById<ImageView>(R.id.tickView)
 
+        // If image is placeholder image, then do not allow clicking on it
         if (imageView?.tag == "placeholder") {
             Toast.makeText(this, "Please select only real images", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // If image is already selected, clicking again will deselect the image
         if (selectedPositions.contains(pos)) {
-            // Deselect the image
             selectedPositions.remove(pos)
             imageView?.alpha = 1.0f
             imageView?.scaleX = 1.0f
@@ -177,6 +193,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             imageView?.scaleY = 1.1f
             tickView?.visibility = View.VISIBLE
 
+            // If images clicked are 6, then start the play activity
             if (selectedPositions.size == 6) {
                 Toast.makeText(this, "Game is starting...", Toast.LENGTH_SHORT).show()
                 // get file names of the selected positions

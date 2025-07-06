@@ -23,6 +23,8 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.fetch_grid, parent, false)
         val imgView = view.findViewById<ImageView>(R.id.imageView)
 
+        // Use this code block if request comes from play activity
+        // Show placeholder if the images are not currently flipped or already revealed
         if (context is PlayActivity) {
             if (revealedPositions.contains(position) || currentlyFlipped.contains(position)) {
                 val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), filenames[position])
@@ -32,13 +34,15 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
                 imgView.tag = "placeholder"
             }
         }
-        else {
+        else {  // Use this one if request comes from fetch activity
             val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), filenames[position])
             showImage(file, imgView)
         }
         return view
     }
 
+    // Show images one by one on the grid view
+    // Use tags "real_image" and "placeholder" to distinguish the type of image being shown
     private fun showImage(file: File, imgView: ImageView) {
         if (file.exists()) {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
@@ -50,6 +54,7 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
         }
     }
 
+    // Return the position of the flipped image
     fun revealPosition(position: Int) {
         if (currentlyFlipped.size < 2 && !currentlyFlipped.contains(position)) {
             currentlyFlipped.add(position)
@@ -57,6 +62,7 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
         }
     }
 
+    // Check if the two flipped images match or not
     fun checkForMatch(): Boolean {
         if (currentlyFlipped.size == 2) {
             val first = currentlyFlipped[0]
@@ -67,12 +73,14 @@ class MyCustomAdapter(private val context: Context, private val filenames: Array
         return false
     }
 
+    // If matched, add currently flipped image positions to the revealed/matched images list
     fun finalizeMatch() {
         revealedPositions.addAll(currentlyFlipped)
         currentlyFlipped.clear()
         notifyDataSetChanged()
     }
 
+    // If not matched, clear the currently flipped list
     fun resetFlipped() {
         currentlyFlipped.clear()
         notifyDataSetChanged()

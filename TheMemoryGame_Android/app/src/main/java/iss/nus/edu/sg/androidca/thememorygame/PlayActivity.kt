@@ -1,6 +1,5 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
-import java.io.File
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -32,6 +31,7 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private lateinit var timerHandler: Handler
     private lateinit var timerRunnable: Runnable
     private var elapsedMillis: Long = 0L
+    private var gameWon: Boolean = false
 
     private lateinit var adImageView: ImageView
     private val adHandler = Handler(Looper.getMainLooper())
@@ -50,10 +50,13 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
         // Initialize timer
         timerHandler = Handler(Looper.getMainLooper())
+
         timerRunnable = Runnable {
             elapsedMillis = SystemClock.elapsedRealtime() - startTime
             val timerText = findViewById<TextView>(R.id.timer)
             timerText.text = TimeUtils.formatElapsedTime(elapsedMillis)
+
+            // Schedule the runnable to run after every 10 centi-seconds
             timerHandler.postDelayed(timerRunnable, 10)
         }
 
@@ -144,18 +147,22 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         if (!::adapter.isInitialized) return
 
+        // Run the timer at the first click on item
         if (!running) {
             startTime = SystemClock.elapsedRealtime()
             timerHandler.post(timerRunnable)
             running = true
         }
 
+        // Reveal the image if just one image is flipped (not counting matched images)
         adapter.revealPosition(position)
 
+        // If two images are flipped, then check if the images match
         if (adapter.currentlyFlipped.size == 2) {
             val gridView = findViewById<GridView>(R.id.playGridView)
             val matches = findViewById<TextView>(R.id.matches)
             gridView.isEnabled = false
+            // Show images if matched
             if (adapter.checkForMatch()) {
                 adapter.finalizeMatch()
                 gridView.isEnabled = true
@@ -168,10 +175,14 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
         }
 
-        if (adapter.revealedPositions.size == adapter.count) {
+        // Stop timer and go to leaderboard activity if game is won
+        if (adapter.revealedPositions.size == adapter.count && !gameWon) {
             timerHandler.removeCallbacks(timerRunnable)
             adHandler.removeCallbacks(adRunnable)
 
+            // Set game won to true so that clicks are not registered anymore
+            gameWon = true
+            // Save completion time in database
             val url = "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
             Log.d("Backend Call Link: ", url)
             Thread {
@@ -179,22 +190,26 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                     val saveResult = URL(url).openStream().bufferedReader().use { it.readText() }
                     runOnUiThread {
                         if (saveResult == "saved") {
-                            Toast.makeText(this, "Completion time saved!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(applicationContext, "Completion time saved!", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(this, "Error saving completion time.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(applicationContext, "Error saving completion time.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    runOnUiThread {
+                        Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }.start()
 
+            // Go to leaderboard
             timerHandler.postDelayed({
                 val intent = Intent(this, LeaderBoardActivity::class.java)
                 intent.putExtra("completion_time", elapsedMillis)
                 startActivity(intent)
                 finish()
-            }, 800)
+            }, 1000)
         }
     }
 }

@@ -27,3 +27,4 @@ local.properties
 *.log
 *.tmp
 *.swp
+.DS_Store

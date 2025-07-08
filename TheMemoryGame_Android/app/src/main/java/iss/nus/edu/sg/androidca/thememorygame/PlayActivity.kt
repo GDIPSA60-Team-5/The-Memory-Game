@@ -1,12 +1,15 @@
 package iss.nus.edu.sg.androidca.thememorygame
 
-import android.annotation.SuppressLint
+import android.animation.Animator
+import android.animation.AnimatorInflater
+import android.animation.AnimatorListenerAdapter
 import android.content.Intent
+import android.media.MediaPlayer
+import android.media.SoundPool
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.GridView
@@ -21,38 +24,54 @@ import java.net.URL
 class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private lateinit var adapter: MyCustomAdapter
+
     private var startTime = 0L
     private var running = false
     private lateinit var timerHandler: Handler
     private lateinit var timerRunnable: Runnable
-    private var elapsedMillis: Long = 0L
-    private var gameWon: Boolean = false
+    private var elapsedMillis = 0L
+    private var gameWon = false
+    private var bgPlayer: MediaPlayer? = null
+    private var transitionPlayer: MediaPlayer? = null
+    private lateinit var soundPool: SoundPool
+    private var soundFlipId = 0
+    private var soundMatchId = 0
+
+    private lateinit var flipOut: Animator
+    private lateinit var flipIn: Animator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_play)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.play)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(sys.left, sys.top, sys.right, sys.bottom)
             insets
         }
 
-        // Initialize a timer object to set a timer
         timerHandler = Handler(Looper.getMainLooper())
-
         timerRunnable = Runnable {
             elapsedMillis = SystemClock.elapsedRealtime() - startTime
-            val timerText = findViewById<TextView>(R.id.timer)
-            timerText.text = TimeUtils.formatElapsedTime(elapsedMillis)
-
-            // Schedule the runnable to run after every 10 centi-seconds
+            findViewById<TextView>(R.id.timer).text =
+                TimeUtils.formatElapsedTime(elapsedMillis)
             timerHandler.postDelayed(timerRunnable, 10)
         }
 
+        bgPlayer = MediaPlayer.create(this, R.raw.bg_music).apply {
+            isLooping = true
+        }
+        transitionPlayer = MediaPlayer.create(this, R.raw.transition)
+
+        soundPool = SoundPool.Builder().setMaxStreams(4).build()
+        soundFlipId  = soundPool.load(this, R.raw.flip, 1)
+        soundMatchId = soundPool.load(this, R.raw.match, 1)
+
+        flipOut = AnimatorInflater.loadAnimator(this, R.animator.flip_out)
+        flipIn  = AnimatorInflater.loadAnimator(this, R.animator.flip_in)
+
         val gridView = findViewById<GridView>(R.id.playGridView)
         val filenames = intent.getStringArrayExtra("filenames")
-        //
         if (filenames != null && filenames.size == 12) {
             adapter = MyCustomAdapter(this, filenames)
             gridView.adapter = adapter
@@ -64,32 +83,57 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        if (!::adapter.isInitialized) return
+    override fun onResume() {
+        super.onResume()
+        bgPlayer?.start()
+    }
 
-        // Run the timer at the first click on item
+    override fun onPause() {
+        super.onPause()
+        bgPlayer?.pause()
+    }
+
+    override fun onItemClick(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+        if (gameWon || view.getTag(R.id.is_animating) == true) return
+
         if (!running) {
             startTime = SystemClock.elapsedRealtime()
             timerHandler.post(timerRunnable)
             running = true
         }
 
-        // Reveal the image if just one image is flipped (not counting matched images)
-        adapter.revealPosition(position)
 
-        // If two images are flipped, then check if the images match
+        soundPool.play(soundFlipId, 1f, 1f, 1, 0, 1f)
+        view.setTag(R.id.is_animating, true)
+
+        flipOut.setTarget(view)
+        flipIn.setTarget(view)
+        flipOut.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                flipOut.removeListener(this)
+                adapter.revealPosition(position)
+                view.setTag(R.id.is_animating, false)
+                flipIn.start()
+                handleMatchAndWin(parent as GridView)
+            }
+        })
+        flipOut.start()
+    }
+
+    private fun handleMatchAndWin(gridView: GridView) {
+        val matches = findViewById<TextView>(R.id.matches)
+
         if (adapter.currentlyFlipped.size == 2) {
-            val gridView = findViewById<GridView>(R.id.playGridView)
-            val matches = findViewById<TextView>(R.id.matches)
             gridView.isEnabled = false
-            // Show images if matched
             if (adapter.checkForMatch()) {
+                // 成功配对音效
+                soundPool.play(soundMatchId, 1f, 1f, 1, 0, 1f)
+
                 adapter.finalizeMatch()
                 gridView.isEnabled = true
-                matches.text = "${adapter.revealedPositions.size / 2}/6 matches"
-            }else {
-                // Reset images if not matched after 0.8 seconds
+                val count = adapter.revealedPositions.size / 2
+                matches.text = getString(R.string.matches_format, count)
+            } else {
                 gridView.postDelayed({
                     adapter.resetFlipped()
                     gridView.isEnabled = true
@@ -97,39 +141,50 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
         }
 
-        // Stop timer and go to leaderboard activity if game is won
         if (adapter.revealedPositions.size == adapter.count && !gameWon) {
-            timerHandler.removeCallbacks(timerRunnable)
-            // Set game won to true so that clicks are not registered anymore
             gameWon = true
-            // Save completion time in database
-            val url = "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
-            Log.d("Backend Call Link: ", url)
+            timerHandler.removeCallbacks(timerRunnable)
+
+
             Thread {
+                val url =
+                    "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
                 try {
-                    val saveResult: String = URL(url).openStream().bufferedReader().use { it.readText() }
-                    runOnUiThread {
-                        if (saveResult == "saved") {
-                            Toast.makeText(applicationContext, "Completion time saved!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(applicationContext, "Error saving completion time.", Toast.LENGTH_SHORT).show()
+                    URL(url).openStream().bufferedReader().use { reader ->
+                        val result = reader.readText()
+                        runOnUiThread {
+                            Toast.makeText(
+                                this,
+                                if (result == "saved") "Completion time saved!"
+                                else "Error saving completion time.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     runOnUiThread {
-                        Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }.start()
 
-            // Go to leaderboard
-            timerHandler.postDelayed({
-                val intent = Intent(this, LeaderBoardActivity::class.java)
-                intent.putExtra("completion_time", elapsedMillis)
-                startActivity(intent)
+            transitionPlayer?.setOnCompletionListener {
+                startActivity(
+                    Intent(this, LeaderBoardActivity::class.java).apply {
+                        putExtra("completion_time", elapsedMillis)
+                    }
+                )
                 finish()
-            }, 1000)
+            }
+            transitionPlayer?.start()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        soundPool.release()
+        bgPlayer?.release()
+        transitionPlayer?.release()
+        timerHandler.removeCallbacks(timerRunnable)
     }
 }

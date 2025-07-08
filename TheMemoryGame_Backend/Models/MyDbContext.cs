@@ -13,7 +13,7 @@ namespace TheMemoryGame_Backend.Models
         {
             optionsBuilder.UseMySql(
                 // Provide database connection string
-                "server=localhost;user=root;password=ZHR19990619;database=TheMemoryGame;",
+                "server=localhost;user=root;password=root;database=TheMemoryGame;",
                 new MySqlServerVersion(new Version(8, 0, 41))
             );
             optionsBuilder.UseLazyLoadingProxies();

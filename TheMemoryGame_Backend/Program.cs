@@ -1,4 +1,6 @@
+using TheMemoryGame_Backend.DataAccess;
 using TheMemoryGame_Backend.Models;
+using TheMemoryGame_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,10 @@ builder.Services.AddControllersWithViews();
 
 // Inject database context into DI-container
 builder.Services.AddDbContext<MyDbContext>();
+
+builder.Services.AddScoped<DatabaseHelper>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
 

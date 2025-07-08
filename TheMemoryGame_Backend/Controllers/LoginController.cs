@@ -29,7 +29,10 @@ namespace TheMemoryGame_Backend.Controllers
         {
             try
             {
-                _userService.ValidateUserCredentials(request.username, request.password);
+                var user = _userService.AuthenticateUser(request.username, request.password);
+
+                HttpContext.Session.SetString("UserId", user.Id.ToString());
+
                 return Ok("Login successful!");
             }
             catch (UserNotFoundException ex)

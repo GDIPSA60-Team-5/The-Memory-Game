@@ -78,7 +78,7 @@ class LoginActivity : AppCompatActivity() {
         Log.d("DEBUG", json)
 
         val request = Request.Builder()
-            .url("http://10.0.2.2:45635/api/login/login")
+            .url("http://10.0.2.2:5178/api/login/login")
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()

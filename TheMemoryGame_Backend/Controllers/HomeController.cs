@@ -1,13 +1,15 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using TheMemoryGame_Backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace TheMemoryGame_Backend.Controllers;
 
 public class HomeController : Controller
 {
     private readonly MyDbContext db;
-    public HomeController(MyDbContext db) {
+    public HomeController(MyDbContext db)
+    {
         this.db = db;
     }
 
@@ -57,5 +59,28 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+    [HttpGet]
+    [Route("api/home/top5")]
+    public async Task<ActionResult<IEnumerable<RecordDTO>>> GetTop5()
+    {
+        var top5 = await db.Record.Where(r => r.User != null).OrderBy(r => r.CompletionTime).Take(5).Select(r => new RecordDTO
+        {
+            Name = r.User.Username,
+            completionTime = r.CompletionTime
+        })
+        .ToListAsync();
+
+        return Ok(top5);
+
+    }
+
+    [HttpGet]
+    [Route("api/home/rank")]
+    public async Task<ActionResult<int>> GetRank([FromQuery] long time)
+    {
+        var rank = await db.Record.CountAsync(r => r.CompletionTime < time);
+        return Ok(rank + 1);
     }
 }

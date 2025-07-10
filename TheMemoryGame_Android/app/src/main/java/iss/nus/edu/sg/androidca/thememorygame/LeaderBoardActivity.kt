@@ -54,8 +54,10 @@ class LeaderBoardActivity : AppCompatActivity() {
             try {
                 val top5 = fetchTop5()
                 val rank = fetchRank(completionTime)
+                val username = fetchUsername()
+
                 runOnUiThread {
-                    displayLeaderBoard(tableLayout, top5, completionTime, rank)
+                    displayLeaderBoard(tableLayout, top5, completionTime, rank, username)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -79,7 +81,7 @@ class LeaderBoardActivity : AppCompatActivity() {
         }
     }
 
-    private fun displayLeaderBoard(tableLayout: TableLayout, records: List<RecordDto>, currentTime: Long, rank: Int) {
+    private fun displayLeaderBoard(tableLayout: TableLayout, records: List<RecordDto>, currentTime: Long, rank: Int, username:String) {
         if (tableLayout.childCount > 1) {
             tableLayout.removeViews(1, tableLayout.childCount - 1)
         }
@@ -121,7 +123,7 @@ class LeaderBoardActivity : AppCompatActivity() {
         }
         if (!currentUserinTop5) {
             addDotsRow(tableLayout)
-            addCurrentUserRow(tableLayout, currentTime, rank)
+            addCurrentUserRow(tableLayout, currentTime, rank, username)
         }
 
     }
@@ -142,7 +144,7 @@ class LeaderBoardActivity : AppCompatActivity() {
         tableLayout.addView(dotsRow)
     }
 
-    private fun addCurrentUserRow(tableLayout: TableLayout, currentTime: Long, rank: Int) {
+    private fun addCurrentUserRow(tableLayout: TableLayout, currentTime: Long, rank: Int, username: String) {
         val row = TableRow(this)
         row.setBackgroundColor(getColor(R.color.highlight))
 
@@ -154,7 +156,7 @@ class LeaderBoardActivity : AppCompatActivity() {
         }
 
         val name = TextView(this).apply {
-            text = "You"
+            text = username
             gravity = Gravity.CENTER
             setPadding(8, 8, 8, 8)
             setTypeface(null, Typeface.BOLD)
@@ -181,6 +183,20 @@ class LeaderBoardActivity : AppCompatActivity() {
             it.readText().toInt()
         }
         }
+
+    private fun fetchUsername(): String {
+        val url = URL("${Constants.BASE_URL}/api/home/me")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+
+        if (connection.responseCode != 200){
+            throw Exception("Not logged in")
+        }
+        return connection.inputStream.bufferedReader().use{
+            it.readText().replace("\"", "")
+
+        }
+    }
 
 
 }

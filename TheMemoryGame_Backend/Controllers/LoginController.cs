@@ -27,9 +27,10 @@ namespace TheMemoryGame_Backend.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
+            Console.WriteLine($"Received login: {request.Username}, {request.Password}");
             try
             {
-                var user = _userService.AuthenticateUser(request.username, request.password);
+                var user = _userService.AuthenticateUser(request.Username, request.Password);
 
                 HttpContext.Session.SetString("UserId", user.Id.ToString());
 

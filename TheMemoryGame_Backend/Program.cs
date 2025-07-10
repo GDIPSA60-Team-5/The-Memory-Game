@@ -1,12 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using TheMemoryGame_Backend.DataAccess;
 using TheMemoryGame_Backend.Models;
+using TheMemoryGame_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
+
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(20);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Inject database context into DI-container
-builder.Services.AddDbContext<MyDbContext>();
+builder.Services.AddDbContext<MyDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 41))
+    )
+    .UseLazyLoadingProxies()
+);
+
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
 
@@ -20,6 +40,8 @@ if (!app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection(); // Disabled this middleware for http connection with android
 app.UseStaticFiles();
+
+app.UseSession();
 
 app.UseRouting();
 

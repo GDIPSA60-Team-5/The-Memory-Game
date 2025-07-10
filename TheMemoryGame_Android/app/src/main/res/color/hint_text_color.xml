@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focused (floating label) -->
+    <item android:color="@android:color/white" android:state_focused="true" />
+    <!-- Unfocused -->
+    <item android:color="#33FFFFFF" /> <!-- White with 20% alpha for unfocused -->
+</selector>

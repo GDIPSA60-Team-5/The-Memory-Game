@@ -252,24 +252,29 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             timerHandler.removeCallbacks(timerRunnable)
             adHandler.removeCallbacks(adRunnable)
 
+
+            elapsedMillis = SystemClock.elapsedRealtime() - startTime
+
             saveCompletionTime()
 
-            transitionPlayer?.setOnCompletionListener {
-                startActivity(Intent(this, LeaderBoardActivity::class.java).apply {
-                    putExtra("completion_time", elapsedMillis)
-                })
-                finish()
-            }
-            transitionPlayer?.start()
+            startActivity(Intent(this, LeaderBoardActivity::class.java).apply {
+                putExtra("completion_time", elapsedMillis)
+            })
+            finish()
         }
+
     }
 
     private fun saveCompletionTime() {
+
         val client = HttpClientProvider.client
         val url = "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}"
 
-        val json = "{\"completionTime\": $elapsedMillis}"
+        val json = "$elapsedMillis"
         val requestBody = json.toRequestBody("application/json".toMediaType())
+
+        Log.d("SaveTime", "Sending POST to: $url")
+        Log.d("SaveTime", "Request body: $json")
 
         val request = Request.Builder()
             .url(url)
@@ -286,15 +291,32 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val result = response.body?.string()
-                Log.d("SaveTime", "Response: $result")
-                runOnUiThread {
-                    val message = if (result == "saved") "Completion time saved!" else "Error saving completion time."
-                    Toast.makeText(this@PlayActivity, message, Toast.LENGTH_SHORT).show()
+                val result = response.body?.string() ?: ""
+                Log.d("SaveTime", "HTTP ${response.code}")
+                Log.d("SaveTime", "Response body: $result")
+
+                if (response.isSuccessful && result == "saved") {
+                    Log.d("SaveTime", "Completion time saved successfully.")
+                    runOnUiThread {
+                        Toast.makeText(this@PlayActivity, "Completion time saved!", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    val errorMsg = when (response.code) {
+                        400 -> "Invalid completion time."
+                        401 -> "Not logged in."
+                        404 -> "User not found."
+                        else -> "Error saving completion time."
+                    }
+                    Log.e("SaveTime", "Error response: code=${response.code}, body=$result")
+                    runOnUiThread {
+                        Toast.makeText(this@PlayActivity, errorMsg, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         })
     }
+
+
 
 
     override fun onDestroy() {

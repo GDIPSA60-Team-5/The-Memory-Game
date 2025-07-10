@@ -2,6 +2,7 @@ package iss.nus.edu.sg.androidca.thememorygame
 
 import android.content.Intent
 import android.graphics.Typeface
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -25,6 +26,7 @@ import java.io.IOException
 
 class LeaderBoardActivity : AppCompatActivity() {
     private val client = HttpClientProvider.client
+    private var victorySoundPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +37,9 @@ class LeaderBoardActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        victorySoundPlayer = MediaPlayer.create(this, R.raw.transition)
+        victorySoundPlayer?.start()
 
         // Show the current completion time on screen
         val completionTime = intent.getLongExtra("completion_time", 0L)
@@ -131,9 +136,12 @@ class LeaderBoardActivity : AppCompatActivity() {
             tableLayout.addView(row)
         }
         if (!currentUserinTop5) {
-            addDotsRow(tableLayout)
+            if (rank > 6) {
+                addDotsRow(tableLayout)
+            }
             addCurrentUserRow(tableLayout, currentTime, rank, username)
         }
+
 
     }
 
@@ -157,32 +165,33 @@ class LeaderBoardActivity : AppCompatActivity() {
         val row = TableRow(this)
         row.setBackgroundColor(getColor(R.color.highlight))
 
-        val rank = TextView(this).apply {
+        val rankView = TextView(this).apply {
             text = rank.toString()
             gravity = Gravity.CENTER
             setPadding(8, 8, 8, 8)
             setTypeface(null, Typeface.BOLD)
         }
 
-        val name = TextView(this).apply {
+        val nameView = TextView(this).apply {
             text = username
             gravity = Gravity.CENTER
             setPadding(8, 8, 8, 8)
             setTypeface(null, Typeface.BOLD)
         }
 
-        val time = TextView(this).apply {
+        val timeView = TextView(this).apply {
             text = TimeUtils.formatElapsedTime(currentTime)
             gravity = Gravity.CENTER
             setPadding(8, 8, 8, 8)
             setTypeface(null, Typeface.BOLD)
         }
 
-        row.addView(rank)
-        row.addView(name)
-        row.addView(time)
+        row.addView(rankView)
+        row.addView(nameView)
+        row.addView(timeView)
         tableLayout.addView(row)
     }
+
 
     private fun fetchRank(completionTime: Long): Int {
         val request = Request.Builder()
@@ -210,5 +219,10 @@ class LeaderBoardActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        victorySoundPlayer?.release()
+        victorySoundPlayer = null
+    }
 
 }

@@ -8,6 +8,7 @@ namespace TheMemoryGame_Backend.Controllers;
 public class HomeController : Controller
 {
     private readonly MyDbContext db;
+
     public HomeController(MyDbContext db)
     {
         this.db = db;
@@ -38,30 +39,29 @@ public class HomeController : Controller
 
     [HttpPost]
     [Route("api/home/save")]
-    public string SaveCompletionTime([FromBody] long completionTime)
+    public async Task<ActionResult<string>> SaveCompletionTime([FromBody] long completionTime)
     {
+        if (completionTime <= 0)
+            return BadRequest("Invalid completion time");
+
         string? userId = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userId))
-        {
-            return "user not found";
-        }
+            return Unauthorized("Not logged in");
 
-        User? user = db.User.FirstOrDefault(u => u.Id == userId);
-
+        var user = await db.User.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
-        {
-            return "user not found";
-        }
+            return NotFound("User not found");
 
-        Record record = new Record
+        var record = new Record
         {
             CompletionTime = completionTime,
             User = user
         };
-        db.Add(record);
-        db.SaveChanges();
 
-        return "saved";
+        db.Record.Add(record);
+        await db.SaveChangesAsync();
+
+        return Ok("saved");
     }
 
 
@@ -75,15 +75,17 @@ public class HomeController : Controller
     [Route("api/home/top5")]
     public async Task<ActionResult<IEnumerable<RecordDTO>>> GetTop5()
     {
-        var top5 = await db.Record.Where(r => r.User != null).OrderBy(r => r.CompletionTime).Take(5).Select(r => new RecordDTO
-        {
-            Name = r.User.Username,
-            completionTime = r.CompletionTime
-        })
-        .ToListAsync();
+        var top5 = await db.Record.Where(r => r.User != null)
+            .OrderBy(r => r.CompletionTime)
+            .Take(5)
+            .Select(r => new RecordDTO
+            {
+                Name = r.User.Username,
+                completionTime = r.CompletionTime
+            })
+            .ToListAsync();
 
         return Ok(top5);
-
     }
 
     [HttpGet]
@@ -93,9 +95,9 @@ public class HomeController : Controller
         var rank = await db.Record.CountAsync(r => r.CompletionTime < time);
         return Ok(rank + 1);
     }
-    
+
     [HttpGet]
-[Route("api/home/me")]
+    [Route("api/home/me")]
     public ActionResult<string> GetCurrentUsername()
     {
         string? userId = HttpContext.Session.GetString("UserId");

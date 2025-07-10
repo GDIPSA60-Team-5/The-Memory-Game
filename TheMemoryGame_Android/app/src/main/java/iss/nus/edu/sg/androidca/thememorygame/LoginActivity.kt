@@ -3,11 +3,12 @@ package iss.nus.edu.sg.androidca.thememorygame
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
+import android.view.View
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import okhttp3.*
@@ -16,34 +17,51 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
-
 class LoginActivity : AppCompatActivity() {
     private val client = OkHttpClient()
+
+    private lateinit var loginBtn: AppCompatButton
+    private lateinit var loginSpinner: View
+    private lateinit var enterUserName: EditText
+    private lateinit var enterPassword: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        supportActionBar?.hide()
         setContentView(R.layout.activity_login)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.login)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
 
-        val login = findViewById<Button>(R.id.loginBtn)
-        val enterUserName = findViewById<EditText>(R.id.userName)
-        val enterPassword = findViewById<EditText>(R.id.password)
 
-        login.setOnClickListener {
+        loginBtn = findViewById(R.id.loginBtn)
+        loginSpinner = findViewById(R.id.loginSpinner)
+        enterUserName = findViewById(R.id.userName)
+        enterPassword = findViewById(R.id.password)
+
+        loginBtn.setOnClickListener {
             val username = enterUserName.text.toString()
             val password = enterPassword.text.toString()
 
             if (username.isBlank() || password.isBlank()) {
-                Toast.makeText(this, "Username and password can not be empty", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Username and password cannot be empty", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            toggleLoading(true)
             sendDataToBackend(username, password)
+        }
+    }
+
+    private fun toggleLoading(isLoading: Boolean) {
+        runOnUiThread {
+            loginBtn.isEnabled = !isLoading
+            loginSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+            loginBtn.text = if (isLoading) "" else "LOGIN TO PLAY"
         }
     }
 
@@ -53,19 +71,24 @@ class LoginActivity : AppCompatActivity() {
             .put("password", password)
             .toString()
 
+        Log.d("DEBUG", "username=[$username], password=[$password]")
+
         val requestBody = json.toRequestBody("application/json".toMediaType())
 
-        //TODO: change your own url
+        Log.d("DEBUG", json)
+
         val request = Request.Builder()
-            .url("http://10.0.2.2:5187/api/login/login")
+            .url("http://10.0.2.2:45635/api/login/login")
             .post(requestBody)
-            .addHeader("Content-Type","application/json")
+            .addHeader("Content-Type", "application/json")
             .build()
+
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("HTTP", "request failure", e)
                 runOnUiThread {
+                    toggleLoading(false)
                     Toast.makeText(this@LoginActivity, "Internet error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -73,18 +96,16 @@ class LoginActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 val statusCode = response.code
                 runOnUiThread {
+                    toggleLoading(false)
                     if (response.isSuccessful) {
-                        // 200-299 means success
-                        Toast.makeText(this@LoginActivity, "login successfully", Toast.LENGTH_SHORT).show()
-                        // go to Fetch page
+                        Toast.makeText(this@LoginActivity, "Login successful", Toast.LENGTH_SHORT).show()
                         val intent = Intent(this@LoginActivity, FetchActivity::class.java)
                         startActivity(intent)
-                        finish() // close login page
+                        finish()
                     } else {
-                        // other code means failure
                         Toast.makeText(
                             this@LoginActivity,
-                            "login failure: HTTP $statusCode",
+                            "Login failure: HTTP $statusCode",
                             Toast.LENGTH_LONG
                         ).show()
                     }

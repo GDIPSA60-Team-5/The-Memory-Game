@@ -21,10 +21,8 @@ builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         new MySqlServerVersion(new Version(8, 0, 41))
-    )
-    .UseLazyLoadingProxies()
+    ).UseLazyLoadingProxies()
 );
-
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<UserService>();
 

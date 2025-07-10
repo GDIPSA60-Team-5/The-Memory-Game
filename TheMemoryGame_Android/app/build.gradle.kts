@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.gson)
     implementation(libs.okhttp)
+    implementation(libs.okhttp.urlconnection)
     implementation(libs.material)
 
 }

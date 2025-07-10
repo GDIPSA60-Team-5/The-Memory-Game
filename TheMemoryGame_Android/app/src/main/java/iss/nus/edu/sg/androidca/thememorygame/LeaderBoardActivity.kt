@@ -3,6 +3,7 @@ package iss.nus.edu.sg.androidca.thememorygame
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.widget.Button
 import android.widget.TableLayout
@@ -13,16 +14,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.setPadding
-import iss.nus.edu.sg.androidca.thememorygame.constants.Constants
 import iss.nus.edu.sg.androidca.thememorygame.data.RecordDto
-import java.net.HttpURLConnection
-import java.net.URL
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken
+import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
+import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
+import okhttp3.Request
+import java.io.IOException
 
 
 class LeaderBoardActivity : AppCompatActivity() {
+    private val client = HttpClientProvider.client
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,8 +56,12 @@ class LeaderBoardActivity : AppCompatActivity() {
         Thread {
             try {
                 val top5 = fetchTop5()
+                Log.d("Leaderboard", "Top5: $top5")
                 val rank = fetchRank(completionTime)
+                Log.d("Leaderboard", "Rank: $rank")
                 val username = fetchUsername()
+                Log.d("Leaderboard", "Username: $username")
+
 
                 runOnUiThread {
                     displayLeaderBoard(tableLayout, top5, completionTime, rank, username)
@@ -69,15 +76,17 @@ class LeaderBoardActivity : AppCompatActivity() {
     }
 
     private fun fetchTop5(): List<RecordDto> {
-        val url = URL("${Constants.BASE_URL}/api/home/top5")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
+        val request = Request.Builder()
+            .url("${ApiConstants.BASE_URL}${ApiConstants.TOP_FIVE_ENDPOINT}")
+            .build()
 
-        return connection.inputStream.bufferedReader().use { reader ->
-            val response = reader.readText()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+            val body = response.body?.string() ?: throw IOException("Empty body")
             val gson = Gson()
             val type = object : TypeToken<List<RecordDto>>() {}.type
-            gson.fromJson(response, type)
+            return gson.fromJson(body, type)
         }
     }
 
@@ -176,25 +185,28 @@ class LeaderBoardActivity : AppCompatActivity() {
     }
 
     private fun fetchRank(completionTime: Long): Int {
-        val url = URL("${Constants.BASE_URL}/api/home/rank?time=$completionTime")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
-        return connection.inputStream.bufferedReader().use {
-            it.readText().toInt()
+        val request = Request.Builder()
+            .url("${ApiConstants.BASE_URL}${ApiConstants.FIND_RANK_ENDPOINT}?time=$completionTime")
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            val body = response.body?.string() ?: throw IOException("Empty body")
+            return body.toInt()
         }
-        }
+    }
+
 
     private fun fetchUsername(): String {
-        val url = URL("${Constants.BASE_URL}/api/home/me")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
+        val request = Request.Builder()
+            .url("${ApiConstants.BASE_URL}${ApiConstants.USERNAME_ENDPOINT}")
+            .build()
 
-        if (connection.responseCode != 200){
-            throw Exception("Not logged in")
-        }
-        return connection.inputStream.bufferedReader().use{
-            it.readText().replace("\"", "")
+        client.newCall(request).execute().use { response ->
+            if (response.code == 401) throw Exception("Not logged in")
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
+            return response.body?.string()?.replace("\"", "") ?: throw IOException("Empty body")
         }
     }
 

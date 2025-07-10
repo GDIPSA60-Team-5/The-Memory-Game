@@ -12,6 +12,7 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
+import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -19,7 +20,8 @@ import org.json.JSONObject
 import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
-    private val client = OkHttpClient()
+    private val client = HttpClientProvider.client
+
 
     private lateinit var loginBtn: AppCompatButton
     private lateinit var loginSpinner: View
@@ -96,23 +98,27 @@ class LoginActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val statusCode = response.code
-                runOnUiThread {
-                    toggleLoading(false)
-                    if (response.isSuccessful) {
-                        Toast.makeText(this@LoginActivity, "Login successful", Toast.LENGTH_SHORT).show()
-                        val intent = Intent(this@LoginActivity, FetchActivity::class.java)
-                        startActivity(intent)
-                        finish()
-                    } else {
-                        Toast.makeText(
-                            this@LoginActivity,
-                            "Login failure: HTTP $statusCode",
-                            Toast.LENGTH_LONG
-                        ).show()
+                response.use {  // ✅ auto-close
+                    val statusCode = it.code
+                    runOnUiThread {
+                        toggleLoading(false)
+                        if (it.isSuccessful) {
+                            Toast.makeText(this@LoginActivity, "Login successful", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(this@LoginActivity, FetchActivity::class.java)
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            val errorBody = it.body?.string()
+                            Toast.makeText(
+                                this@LoginActivity,
+                                "Login failure: HTTP $statusCode\n$errorBody",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             }
+
         })
     }
 }

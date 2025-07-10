@@ -25,7 +25,7 @@ public class HomeController : Controller
 
     [HttpPost]
     [Route("api/home/save")]
-    public string SaveCompletionTime(long completionTime)
+    public string SaveCompletionTime([FromBody] long completionTime)
     {
         string? userId = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userId))
@@ -50,6 +50,7 @@ public class HomeController : Controller
 
         return "saved";
     }
+
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

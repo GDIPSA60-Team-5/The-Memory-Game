@@ -21,7 +21,7 @@ import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
     private val client = HttpClientProvider.client
-
+    private val apiUrl = ApiConstants.LOGIN
 
     private lateinit var loginBtn: AppCompatButton
     private lateinit var loginSpinner: View
@@ -80,9 +80,8 @@ class LoginActivity : AppCompatActivity() {
 
         Log.d("DEBUG", json)
 
-        val url = ApiConstants.BASE_URL + ApiConstants.LOGIN_ENDPOINT
         val request = Request.Builder()
-            .url(url)
+            .url(apiUrl)
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()

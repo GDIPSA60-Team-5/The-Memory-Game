@@ -1,4 +1,4 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.utils
 
 import android.annotation.SuppressLint
 import android.content.Context

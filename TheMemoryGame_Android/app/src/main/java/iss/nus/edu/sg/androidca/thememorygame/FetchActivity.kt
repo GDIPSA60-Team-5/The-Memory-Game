@@ -4,24 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
-import android.widget.Button
-import android.widget.EditText
-import android.widget.GridView
+import android.view.View
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import org.jsoup.Jsoup
 import java.io.File
-import java.net.URL
-import android.util.Log
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
 import java.net.HttpURLConnection
+import java.net.URL
 
 class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private val filenames = (1..20).map { "$it.jpg" }
@@ -33,6 +25,30 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private lateinit var urlInput: EditText
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
+
+    @SuppressLint("SetTextI18n")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        supportActionBar?.hide()
+        setContentView(R.layout.activity_fetch)
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.fetch)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        initializeUI()
+
+        getImageDir()?.let { deleteExistingImages(it) }
+
+        findViewById<Button>(R.id.btn).setOnClickListener {
+            fetchImages()
+        }
+
+        gridView.onItemClickListener = this
+    }
 
     private fun initializeUI() {
         gridView = findViewById(R.id.imageGridView)
@@ -48,29 +64,6 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         return getExternalFilesDir(Environment.DIRECTORY_PICTURES)
     }
 
-    @SuppressLint("SetTextI18n")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        supportActionBar?.hide()
-        setContentView(R.layout.activity_fetch)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.fetch)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        initializeUI()
-
-        // Delete previously downloaded images on launch
-        getImageDir()?.let { deleteExistingImages(it) }
-
-        findViewById<Button>(R.id.btn).setOnClickListener {
-            fetchImages()
-        }
-
-        gridView.onItemClickListener = this
-    }
-
     private fun fetchImages() {
         resetBackgroundThread()
         bgThread = Thread {
@@ -81,9 +74,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
                 val imageUrls = scrapeImageUrlsFromInput()
                 showInitialDownloadUI(imageUrls.size)
-
                 downloadAllImages(imageUrls, imageDir)
-
                 onDownloadCompleted()
 
             } catch (e: Exception) {
@@ -92,6 +83,26 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
         bgThread?.start()
     }
+
+    private fun prepareForNewFetch(directory: File) {
+        deleteExistingImages(directory)
+        runOnUiThread {
+            adapter.notifyDataSetChanged()
+            clearSelectionHighlights()
+        }
+    }
+
+    @Throws(Exception::class)
+    private fun scrapeImageUrlsFromInput(imageCount: Int = 20): List<String> {
+        val pageUrl = urlInput.text.toString()
+        val doc = Jsoup.connect(pageUrl).userAgent("Mozilla").get()
+        return doc.select("img")
+            .mapNotNull { it.absUrl("src") }
+            .filter { it.startsWith("https") && !it.endsWith(".svg") }
+            .distinct()
+            .take(imageCount)
+    }
+
     private fun showInitialDownloadUI(total: Int) {
         runOnUiThread {
             progressBar.apply {
@@ -102,23 +113,6 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             progressText.text = "Starting download..."
             progressText.visibility = View.VISIBLE
         }
-    }
-    private fun prepareForNewFetch(directory: File) {
-        deleteExistingImages(directory)
-        runOnUiThread {
-            adapter.notifyDataSetChanged()
-            clearSelectionHighlights()
-        }
-    }
-    @Throws(Exception::class)
-    private fun scrapeImageUrlsFromInput(imageCount: Int = 20): List<String> {
-        val pageUrl = urlInput.text.toString()
-        val doc = Jsoup.connect(pageUrl).userAgent("Mozilla").get()
-        return doc.select("img")
-            .mapNotNull { it.absUrl("src") }
-            .filter { it.startsWith("https") && !it.endsWith(".svg") }
-            .distinct()
-            .take(imageCount)
     }
 
     private fun downloadAllImages(imageUrls: List<String>, directory: File) {
@@ -172,28 +166,28 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private fun clearSelectionHighlights() {
         selectedPositions.forEach { pos ->
             val child = gridView.getChildAt(pos)
-            val imageView = child?.findViewById<ImageView>(R.id.imageView)
-            val tickView = child?.findViewById<ImageView>(R.id.tickView)
-            updateImageSelectionUI(imageView, tickView, false)
+            val front = child?.findViewById<ImageView>(R.id.cardFront)
+            val tick = child?.findViewById<ImageView>(R.id.tickView)
+            updateImageSelectionUI(front, tick, false)
         }
         selectedPositions.clear()
     }
 
     override fun onItemClick(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-        val imageView = view?.findViewById<ImageView>(R.id.imageView)
+        val cardFront = view?.findViewById<ImageView>(R.id.cardFront)
         val tickView = view?.findViewById<ImageView>(R.id.tickView)
 
-        if (imageView?.tag == "placeholder") {
+        if (cardFront?.tag == "placeholder") {
             Toast.makeText(this, "Please select only real images", Toast.LENGTH_SHORT).show()
             return
         }
 
         if (selectedPositions.contains(pos)) {
             selectedPositions.remove(pos)
-            updateImageSelectionUI(imageView, tickView, false)
+            updateImageSelectionUI(cardFront, tickView, false)
         } else {
             selectedPositions.add(pos)
-            updateImageSelectionUI(imageView, tickView, true)
+            updateImageSelectionUI(cardFront, tickView, true)
 
             if (selectedPositions.size == 6) {
                 startGameWithSelectedImages()
@@ -201,17 +195,17 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
-    private fun updateImageSelectionUI(imageView: ImageView?, tickView: ImageView?, isSelected: Boolean) {
+    private fun updateImageSelectionUI(front: ImageView?, tick: ImageView?, isSelected: Boolean) {
         if (isSelected) {
-            imageView?.alpha = 0.5f
-            imageView?.scaleX = 1.1f
-            imageView?.scaleY = 1.1f
-            tickView?.visibility = View.VISIBLE
+            front?.alpha = 0.5f
+            front?.scaleX = 1.1f
+            front?.scaleY = 1.1f
+            tick?.visibility = View.VISIBLE
         } else {
-            imageView?.alpha = 1.0f
-            imageView?.scaleX = 1.0f
-            imageView?.scaleY = 1.0f
-            tickView?.visibility = View.GONE
+            front?.alpha = 1.0f
+            front?.scaleX = 1.0f
+            front?.scaleY = 1.0f
+            tick?.visibility = View.GONE
         }
     }
 

@@ -4,59 +4,44 @@ import android.animation.Animator
 import android.animation.AnimatorInflater
 import android.animation.AnimatorListenerAdapter
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.media.MediaPlayer
-import android.media.SoundPool
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
-import android.util.Log
+import android.os.*
 import android.view.View
-import android.widget.AdapterView
-import android.widget.GridView
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
+import iss.nus.edu.sg.androidca.thememorygame.utils.AdRotator
+import iss.nus.edu.sg.androidca.thememorygame.utils.SoundManager
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.Response
 import java.io.IOException
-
-import org.jsoup.Jsoup
-import java.net.URL
-import kotlin.random.Random
-
 
 class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
-    private lateinit var adapter: MyCustomAdapter
-    private var gameWon = false
+    companion object {
+        private const val REQUIRED_IMAGE_COUNT = 12
+        private const val MATCH_REVEAL_DELAY = 800L
+        private const val MAX_FLIPPED_CARDS = 2
+    }
 
-    private lateinit var timerHandler: Handler
-    private lateinit var timerRunnable: Runnable
+    private lateinit var adapter: MyCustomAdapter
+    private lateinit var timer: GameTimer
+    private lateinit var soundManager: SoundManager
+    private lateinit var adRotator: AdRotator
+    private lateinit var gridView: GridView
+    private lateinit var matchesView: TextView
+
+    private var gameStarted = false
+    private var gameWon = false
     private var startTime = 0L
     private var elapsedMillis = 0L
-    private var running = false
 
-    private var bgPlayer: MediaPlayer? = null
-    private var transitionPlayer: MediaPlayer? = null
-    private lateinit var soundPool: SoundPool
-    private var soundFlipId = 0
-    private var soundMatchId = 0
-
-    private lateinit var adImageView: ImageView
-    private val adHandler = Handler(Looper.getMainLooper())
-    private lateinit var adRunnable: Runnable
+    private lateinit var flipOutRes: Animator
+    private lateinit var flipInRes: Animator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,264 +49,241 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         supportActionBar?.hide()
         setContentView(R.layout.activity_play)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.play)) { v, insets ->
-            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(sys.left, sys.top, sys.right, sys.bottom)
-            insets
-        }
+        initializeViews()
+        applyInsets()
+        initializeAnimators()
+        initializeComponents()
 
-        // Initialize timer
-        setupTimer()
-        setupSounds()
-
-        val filenames = intent.getStringArrayExtra("filenames")
-        if (filenames == null || filenames.size != 12) {
-            Toast.makeText(this, "Invalid image data", Toast.LENGTH_SHORT).show()
-            finish()
+        val filenames = getImageFilenames()
+        if (filenames == null) {
+            handleInvalidImageData()
             return
         }
 
+        setupGame(filenames)
+    }
+
+    private fun initializeViews() {
+        gridView = findViewById(R.id.playGridView)
+        matchesView = findViewById(R.id.matches)
+    }
+
+    private fun applyInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.play)) { view, insets ->
+            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(sys.left, sys.top, sys.right, sys.bottom)
+            insets
+        }
+    }
+
+    private fun initializeAnimators() {
+        flipOutRes = AnimatorInflater.loadAnimator(this, R.animator.flip_out)
+        flipInRes = AnimatorInflater.loadAnimator(this, R.animator.flip_in)
+    }
+    private fun initializeComponents() {
+        timer = GameTimer(findViewById(R.id.timer))
+        soundManager = SoundManager(this)
+        adRotator = AdRotator(this, findViewById(R.id.ads))
+        adRotator.start()
+    }
+
+    private fun getImageFilenames(): Array<String>? {
+        val filenames = intent.getStringArrayExtra("filenames")
+        return if (filenames != null && filenames.size == REQUIRED_IMAGE_COUNT) {
+            filenames
+        } else {
+            null
+        }
+    }
+
+    private fun handleInvalidImageData() {
+        showToast("Invalid image data")
+        finish()
+    }
+
+    private fun setupGame(filenames: Array<String>) {
         adapter = MyCustomAdapter(this, filenames)
-        findViewById<GridView>(R.id.playGridView).apply {
+        gridView.apply {
             adapter = this@PlayActivity.adapter
             onItemClickListener = this@PlayActivity
         }
-
-    }
-
-    private fun setupTimer() {
-        timerHandler = Handler(Looper.getMainLooper())
-        timerRunnable = object : Runnable {
-            override fun run() {
-                elapsedMillis = SystemClock.elapsedRealtime() - startTime
-                findViewById<TextView>(R.id.timer).text = TimeUtils.formatElapsedTime(elapsedMillis)
-                timerHandler.postDelayed(this, 10)
-            }
-        }
-    }
-
-    private fun setupSounds() {
-        bgPlayer = MediaPlayer.create(this, R.raw.bg_music).apply { isLooping = true }
-        transitionPlayer = MediaPlayer.create(this, R.raw.transition)
-        soundPool = SoundPool.Builder().setMaxStreams(4).build()
-        soundFlipId = soundPool.load(this, R.raw.flip, 1)
-        soundMatchId = soundPool.load(this, R.raw.match, 1)
-
-        adImageView = findViewById(R.id.ads)
-
-        // Determine user type (replace with real check)
-//        isPaidUser = false // TODO: Replace with real logic
-//        if (!isPaidUser) {
-//            adImageView.visibility = View.VISIBLE
-//            startAdRotation()
-//        } else {
-//            adImageView.visibility = View.GONE
-//        }
-        adImageView.visibility = View.VISIBLE
-        startAdRotation()
-    }
-
-    private fun startAdRotation() {
-        Thread {
-            try {
-                // Step 1: Scrape image URLs (background)
-                val doc = Jsoup.connect("http://10.0.2.2:5187/")
-                    .userAgent("Mozilla")
-                    .get()
-                val imgElements = doc.select("img")
-                val httpsImgSrcs = TimeUtils.scrapeImages(imgElements, 11)
-
-                // Step 2: Create image file names
-                val ads = mutableListOf<String>()
-                for (i in 1..11) {
-                    val fileName = if (i < 10) "ad_0$i.png" else "ad_$i.png"
-                    ads.add(fileName)
-                }
-
-                // Step 3: Download images to local storage
-                val localFiles = mutableListOf<File>()
-                for (i in ads.indices) {
-                    val file = TimeUtils.makeFile(applicationContext, ads[i])
-                    TimeUtils.downloadToFile(httpsImgSrcs[i], file)
-                    localFiles.add(file)
-                }
-                Log.d("Downloaded Ads:", localFiles.toString())
-
-                // Step 4: Switch back to main thread for UI updates
-                runOnUiThread {
-                    adRunnable = object : Runnable {
-                        override fun run() {
-                            val randomIndex = Random.nextInt(localFiles.size)
-                            val file = localFiles[randomIndex]
-
-                            if (file.exists()) {
-                                // Decode bitmap in a separate thread (optional)
-                                Thread {
-                                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                                    runOnUiThread {
-                                        adImageView.setImageBitmap(bitmap)
-                                    }
-                                }.start()
-                            }
-
-                            adHandler.postDelayed(this, 30000)
-                        }
-                    }
-                    adHandler.post(adRunnable)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }.start()
     }
 
     override fun onResume() {
         super.onResume()
-        bgPlayer?.start()
+        soundManager.playBackground()
     }
 
     override fun onPause() {
         super.onPause()
-        bgPlayer?.pause()
+        soundManager.pauseBackground()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cleanup()
+    }
+
+    private fun cleanup() {
+        timer.cleanup()
+        soundManager.cleanup()
+        adRotator.stop()
     }
 
     override fun onItemClick(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-        // Do not allow flipping after game ends or if already revealed/flipping
-        if (gameWon ||
-            adapter.revealedPositions.contains(position) ||
-            adapter.currentlyFlipped.contains(position) ||
-            view.getTag(R.id.is_animating) == true ||
-            adapter.currentlyFlipped.size >= 2
-        ) return
+        if (!isValidClick(view, position)) return
 
-        // Start timer on first flip
-        if (!running) {
+        startGameIfNeeded()
+        handleCardClick(view, position)
+    }
+
+    private fun isValidClick(view: View, position: Int): Boolean {
+        return !gameWon &&
+                view.getTag(R.id.is_animating) != true &&
+                adapter.getCurrentlyFlippedCount() < MAX_FLIPPED_CARDS
+    }
+
+    private fun startGameIfNeeded() {
+        if (!gameStarted) {
+            gameStarted = true
             startTime = SystemClock.elapsedRealtime()
-            timerHandler.post(timerRunnable)
-            running = true
+            timer.start(startTime)
         }
+    }
 
-        // Flip animation
+    private fun handleCardClick(view: View, position: Int) {
+        val wasRevealed = adapter.revealPosition(position)
+        if (wasRevealed) {
+            view.setTag(R.id.is_animating, true)
+            soundManager.playFlip()
+            animateCardFlip(view)
+        }
+    }
+
+    private fun animateCardFlip(view: View) {
+        val flipOutAnimator = inflateAnimator(flipOutRes, view)
+        val flipInAnimator = inflateAnimator(flipInRes, view)
+
         view.setTag(R.id.is_animating, true)
-        soundPool.play(soundFlipId, 1f, 1f, 1, 0, 1f)
+        view.rotationY = 0f
 
-        val flipOut = AnimatorInflater.loadAnimator(this, R.animator.flip_out)
-        val flipIn = AnimatorInflater.loadAnimator(this, R.animator.flip_in)
-
-        flipOut.setTarget(view)
-        flipIn.setTarget(view)
-
-        flipOut.addListener(object : AnimatorListenerAdapter() {
+        flipOutAnimator.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
-                adapter.revealPosition(position)
-                view.setTag(R.id.is_animating, false)
-                flipIn.start()
-
-                if (adapter.currentlyFlipped.size == 2) {
-                    handleMatchAndWin(parent as GridView)
-                }
+                flipInAnimator.start()
+                flipOutAnimator.removeListener(this)
             }
         })
 
-        flipOut.start()
+        flipInAnimator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                view.setTag(R.id.is_animating, false)
+
+                if (adapter.getCurrentlyFlippedCount() == MAX_FLIPPED_CARDS) {
+                    processCardMatch()
+                }
+
+                flipInAnimator.removeListener(this)
+            }
+        })
+
+        flipOutAnimator.start()
     }
 
-    private fun handleMatchAndWin(gridView: GridView) {
-        if (gameWon) return
 
-        val matchesView = findViewById<TextView>(R.id.matches)
+    private fun inflateAnimator(base: Animator, target: View): Animator {
+        val clone = base.clone()
+        clone.setTarget(target)
+        return clone
+    }
 
-        if (adapter.currentlyFlipped.size == 2) {
-            gridView.isEnabled = false
+    private fun processCardMatch() {
+        gridView.isEnabled = false
 
-            if (adapter.checkForMatch()) {
-                soundPool.play(soundMatchId, 1f, 1f, 1, 0, 1f)
-                adapter.finalizeMatch()
-                val matchedPairs = adapter.revealedPositions.size / 2
-                matchesView.text = getString(R.string.matches_format, matchedPairs)
-                gridView.isEnabled = true
-            } else {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    adapter.resetFlipped()
-                    gridView.isEnabled = true
-                }, 800)
-            }
+        if (adapter.checkForMatch()) {
+            handleSuccessfulMatch()
+        } else {
+            handleFailedMatch()
         }
 
-        if (adapter.revealedPositions.size == adapter.count && !gameWon) {
-            gameWon = true
-            timerHandler.removeCallbacks(timerRunnable)
-            adHandler.removeCallbacks(adRunnable)
+        checkForGameCompletion()
+    }
 
+    private fun handleSuccessfulMatch() {
+        soundManager.playMatch()
+        adapter.finalizeMatch()
+        updateMatchesDisplay()
+        gridView.isEnabled = true
+    }
 
-            elapsedMillis = SystemClock.elapsedRealtime() - startTime
+    private fun handleFailedMatch() {
+        Handler(Looper.getMainLooper()).postDelayed({
+            adapter.resetFlipped()
+            gridView.isEnabled = true
+        }, MATCH_REVEAL_DELAY)
+    }
 
-            saveCompletionTime()
+    private fun updateMatchesDisplay() {
+        val matchedPairs = adapter.getRevealedCount() / 2
+        matchesView.text = getString(R.string.matches_format, matchedPairs)
+    }
 
-            startActivity(Intent(this, LeaderBoardActivity::class.java).apply {
-                putExtra("completion_time", elapsedMillis)
-            })
-            finish()
+    private fun checkForGameCompletion() {
+        if (adapter.isGameComplete() && !gameWon) {
+            completeGame()
         }
+    }
 
+    private fun completeGame() {
+        gameWon = true
+        timer.stop()
+        adRotator.stop()
+        elapsedMillis = SystemClock.elapsedRealtime() - startTime
+        saveCompletionTime()
+        navigateToLeaderboard()
+    }
+
+    private fun navigateToLeaderboard() {
+        val intent = Intent(this, LeaderBoardActivity::class.java).apply {
+            putExtra("completion_time", elapsedMillis)
+        }
+        startActivity(intent)
+        finish()
     }
 
     private fun saveCompletionTime() {
-
         val client = HttpClientProvider.client
-        val url = "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}"
-
-        val json = "$elapsedMillis"
-        val requestBody = json.toRequestBody("application/json".toMediaType())
-
-        Log.d("SaveTime", "Sending POST to: $url")
-        Log.d("SaveTime", "Request body: $json")
+        val jsonBody = "$elapsedMillis"
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
-            .url(url)
+            .url(ApiConstants.SAVE_TIME)
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e("SaveTime", "Failed to send completion time", e)
-                runOnUiThread {
-                    Toast.makeText(this@PlayActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+                showToast("Error: ${e.message}")
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val result = response.body?.string() ?: ""
-                Log.d("SaveTime", "HTTP ${response.code}")
-                Log.d("SaveTime", "Response body: $result")
-
-                if (response.isSuccessful && result == "saved") {
-                    Log.d("SaveTime", "Completion time saved successfully.")
-                    runOnUiThread {
-                        Toast.makeText(this@PlayActivity, "Completion time saved!", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    val errorMsg = when (response.code) {
-                        400 -> "Invalid completion time."
-                        401 -> "Not logged in."
-                        404 -> "User not found."
-                        else -> "Error saving completion time."
-                    }
-                    Log.e("SaveTime", "Error response: code=${response.code}, body=$result")
-                    runOnUiThread {
-                        Toast.makeText(this@PlayActivity, errorMsg, Toast.LENGTH_SHORT).show()
-                    }
-                }
+                handleSaveResponse(response)
             }
         })
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        soundPool.release()
-        bgPlayer?.release()
-        transitionPlayer?.release()
-        timerHandler.removeCallbacks(timerRunnable)
+    private fun handleSaveResponse(response: Response) {
+        val result = response.body?.string().orEmpty()
+        val message = when {
+            response.isSuccessful && result == "saved" -> "Completion time saved!"
+            else -> "Error saving time: ${response.code}"
+        }
+        showToast(message)
+    }
+
+    private fun showToast(message: String) {
+        runOnUiThread {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
     }
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -51,5 +52,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.urlconnection)
     implementation(libs.material)
-
+    implementation(libs.glide)
+    ksp(libs.glide.ksp)
 }

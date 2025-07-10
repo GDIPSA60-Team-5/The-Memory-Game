@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
+import iss.nus.edu.sg.androidca.thememorygame.utils.TimeUtils
 import okhttp3.Request
 import java.io.IOException
 
@@ -82,7 +83,7 @@ class LeaderBoardActivity : AppCompatActivity() {
 
     private fun fetchTop5(): List<RecordDto> {
         val request = Request.Builder()
-            .url("${ApiConstants.BASE_URL}${ApiConstants.TOP_FIVE_ENDPOINT}")
+            .url(ApiConstants.TOP_FIVE)
             .build()
 
         client.newCall(request).execute().use { response ->
@@ -195,7 +196,7 @@ class LeaderBoardActivity : AppCompatActivity() {
 
     private fun fetchRank(completionTime: Long): Int {
         val request = Request.Builder()
-            .url("${ApiConstants.BASE_URL}${ApiConstants.FIND_RANK_ENDPOINT}?time=$completionTime")
+            .url("${ApiConstants.FIND_RANK}?time=$completionTime")
             .build()
 
         client.newCall(request).execute().use { response ->
@@ -208,7 +209,7 @@ class LeaderBoardActivity : AppCompatActivity() {
 
     private fun fetchUsername(): String {
         val request = Request.Builder()
-            .url("${ApiConstants.BASE_URL}${ApiConstants.USERNAME_ENDPOINT}")
+            .url(ApiConstants.USERNAME)
             .build()
 
         client.newCall(request).execute().use { response ->

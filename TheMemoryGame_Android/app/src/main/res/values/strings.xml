@@ -5,5 +5,7 @@
     <string name="download_progress_text">Downloading 0 of 20 images...</string>
     <string name="initial_match">0/6 matches</string>
     <string name="initial_timer_value">00:00:00</string>
+    <string name="matches_format">%1$d/6 matches</string>
+
     <string name="background">Futuristic Background Image</string>
 </resources>

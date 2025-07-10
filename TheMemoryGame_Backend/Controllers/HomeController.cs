@@ -13,6 +13,19 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
+        var images = new List<string>();
+        for (var i = 1; i < 12; i++)
+        {
+            if (i < 10)
+            {
+                images.Add("ad_0" + i + ".png");
+            }
+            else
+            {
+                images.Add("ad_" + i + ".png");
+            }
+        }
+        ViewData["Images"] = images;
         return View();
     }
 

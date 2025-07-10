@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import java.io.File
-import android.util.Log
 
 class MyCustomAdapter(private val context: Context, private val filenames: Array<String>) : ArrayAdapter<Any?>(
     context,

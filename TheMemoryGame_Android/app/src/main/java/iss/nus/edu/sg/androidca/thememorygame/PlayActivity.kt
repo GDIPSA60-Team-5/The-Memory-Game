@@ -61,6 +61,7 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        supportActionBar?.hide()
         setContentView(R.layout.activity_play)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.play)) { v, insets ->
@@ -315,9 +316,6 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             }
         })
     }
-
-
-
 
     override fun onDestroy() {
         super.onDestroy()

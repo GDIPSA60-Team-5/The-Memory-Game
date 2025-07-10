@@ -36,14 +36,23 @@ public class HomeController : Controller
         return View();
     }
 
+    [HttpPost]
+    [Route("api/home/save")]
     public string SaveCompletionTime(long completionTime)
     {
-        // TODO: Check session to get user or user id instead of this
-        User? user = db.User.FirstOrDefault(x => x.Username == "Aung");
+        string? userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
+        {
+            return "user not found";
+        }
+
+        User? user = db.User.FirstOrDefault(u => u.Id == userId);
+
         if (user == null)
         {
             return "user not found";
         }
+
         Record record = new Record
         {
             CompletionTime = completionTime,
@@ -82,5 +91,24 @@ public class HomeController : Controller
     {
         var rank = await db.Record.CountAsync(r => r.CompletionTime < time);
         return Ok(rank + 1);
+    }
+    
+    [HttpGet]
+[Route("api/home/me")]
+    public ActionResult<string> GetCurrentUsername()
+    {
+        string? userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized("Not logged in");
+        }
+
+        var user = db.User.FirstOrDefault(u => u.Id == userId);
+        if (user == null)
+        {
+            return NotFound("User not found");
+        }
+
+        return Ok(user.Username);
     }
 }

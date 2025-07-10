@@ -73,67 +73,67 @@
         </TableRow>
 
         <!-- Top 5 Rows -->
-        <TableRow>
-            <TextView android:text="1" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="Alice" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="00:12.45" android:padding="8dp" android:gravity="center" />
-        </TableRow>
-        <TableRow>
-            <TextView android:text="2" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="Bob" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="00:13.10" android:padding="8dp" android:gravity="center" />
-        </TableRow>
-        <TableRow>
-            <TextView android:text="3" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="Charlie" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="00:13.99" android:padding="8dp" android:gravity="center" />
-        </TableRow>
-        <TableRow>
-            <TextView android:text="4" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="Dave" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="00:15.22" android:padding="8dp" android:gravity="center" />
-        </TableRow>
-        <TableRow>
-            <TextView android:text="5" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="Eve" android:padding="8dp" android:gravity="center" />
-            <TextView android:text="00:15.80" android:padding="8dp" android:gravity="center" />
-        </TableRow>
+<!--        <TableRow>-->
+<!--            <TextView android:text="1" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="Alice" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="00:12.45" android:padding="8dp" android:gravity="center" />-->
+<!--        </TableRow>-->
+<!--        <TableRow>-->
+<!--            <TextView android:text="2" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="Bob" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="00:13.10" android:padding="8dp" android:gravity="center" />-->
+<!--        </TableRow>-->
+<!--        <TableRow>-->
+<!--            <TextView android:text="3" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="Charlie" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="00:13.99" android:padding="8dp" android:gravity="center" />-->
+<!--        </TableRow>-->
+<!--        <TableRow>-->
+<!--            <TextView android:text="4" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="Dave" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="00:15.22" android:padding="8dp" android:gravity="center" />-->
+<!--        </TableRow>-->
+<!--        <TableRow>-->
+<!--            <TextView android:text="5" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="Eve" android:padding="8dp" android:gravity="center" />-->
+<!--            <TextView android:text="00:15.80" android:padding="8dp" android:gravity="center" />-->
+<!--        </TableRow>-->
 
         <!-- Dots Row -->
-        <TableRow>
-            <TextView
-                android:layout_span="3"
-                android:gravity="center"
-                android:text="⋮"
-                android:textSize="22sp"
-                android:padding="8dp" />
-        </TableRow>
+<!--        <TableRow>-->
+<!--            <TextView-->
+<!--                android:layout_span="3"-->
+<!--                android:gravity="center"-->
+<!--                android:text="⋮"-->
+<!--                android:textSize="22sp"-->
+<!--                android:padding="8dp" />-->
+<!--        </TableRow>-->
 
-        <!-- Current User Highlighted Row -->
-        <TableRow
-            android:background="@color/highlight">
+<!--        &lt;!&ndash; Current User Highlighted Row &ndash;&gt;-->
+<!--        <TableRow-->
+<!--            android:background="@color/highlight">-->
 
-            <TextView
-                android:text="35"
-                android:padding="8dp"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textColor="@color/black" />
+<!--            <TextView-->
+<!--                android:text="35"-->
+<!--                android:padding="8dp"-->
+<!--                android:gravity="center"-->
+<!--                android:textStyle="bold"-->
+<!--                android:textColor="@color/black" />-->
 
-            <TextView
-                android:text="Aung"
-                android:padding="8dp"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textColor="@color/black" />
+<!--            <TextView-->
+<!--                android:text="Aung"-->
+<!--                android:padding="8dp"-->
+<!--                android:gravity="center"-->
+<!--                android:textStyle="bold"-->
+<!--                android:textColor="@color/black" />-->
 
-            <TextView
-                android:id="@+id/current_completion_time_in_table"
-                android:padding="8dp"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textColor="@color/black" />
-        </TableRow>
+<!--            <TextView-->
+<!--                android:id="@+id/current_completion_time_in_table"-->
+<!--                android:padding="8dp"-->
+<!--                android:gravity="center"-->
+<!--                android:textStyle="bold"-->
+<!--                android:textColor="@color/black" />-->
+<!--        </TableRow>-->
 
     </TableLayout>
 

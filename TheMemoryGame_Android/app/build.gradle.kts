@@ -47,6 +47,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.jsoup)
+    implementation(libs.gson)
     implementation(libs.okhttp)
     implementation(libs.material)
 

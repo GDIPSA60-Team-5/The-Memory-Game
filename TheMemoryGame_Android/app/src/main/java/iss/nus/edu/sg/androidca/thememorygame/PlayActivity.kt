@@ -23,6 +23,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
+import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.IOException
+
 import org.jsoup.Jsoup
 import java.net.URL
 import kotlin.random.Random
@@ -256,22 +265,37 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     }
 
     private fun saveCompletionTime() {
-        Thread {
-            val url =
-                "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}?completionTime=$elapsedMillis"
-            try {
-                val result = URL(url).openStream().bufferedReader().use { it.readText() }
+        val client = HttpClientProvider.client
+        val url = "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}"
+
+        val json = "{\"completionTime\": $elapsedMillis}"
+        val requestBody = json.toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("SaveTime", "Failed to send completion time", e)
                 runOnUiThread {
-                    val message = if (result == "saved") "Completion time saved!" else "Error saving completion time."
-                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(this, e.message ?: "Unknown error", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@PlayActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
-        }.start()
+
+            override fun onResponse(call: Call, response: Response) {
+                val result = response.body?.string()
+                Log.d("SaveTime", "Response: $result")
+                runOnUiThread {
+                    val message = if (result == "saved") "Completion time saved!" else "Error saving completion time."
+                    Toast.makeText(this@PlayActivity, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
     }
+
 
     override fun onDestroy() {
         super.onDestroy()

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CustomTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxStrokeColor">@color/outline_white_alpha</item>
+        <item name="hintTextColor">@color/hint_text_color</item>
+        <item name="android:textColorHint">@color/hint_text_color</item>
+        <item name="boxBackgroundColor">#33000000</item>
+    </style>
+
+
+
+    <style name="GradientButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/gradient_button</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:paddingLeft">30dp</item>
+        <item name="android:paddingRight">30dp</item>
+        <item name="android:minHeight">50dp</item>
+        <item name="android:minWidth">120dp</item>
+    </style>
+</resources>

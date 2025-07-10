@@ -13,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import java.net.URL
 
 class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
@@ -171,7 +172,8 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private fun saveCompletionTime() {
         Thread {
-            val url = "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
+            val url =
+                "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}?completionTime=$elapsedMillis"
             try {
                 val result = URL(url).openStream().bufferedReader().use { it.readText() }
                 runOnUiThread {

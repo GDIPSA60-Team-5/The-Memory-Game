@@ -1,5 +1,5 @@
 -- Insert User: Aung
-INSERT INTO User (Id, Username, Password, UserType)
+INSERT INTO User (Id, Username, PasswordHash, UserType)
 VALUES ('11111111-1111-1111-1111-111111111111', 'Aung', '$2a$12$jdnFClWhMoWJcyvQ3fxGnurs2ETNKbGEjC7n7eEOGyM1nyKGYheja', 'free');
 
 -- Insert User: Haziq

@@ -22,6 +22,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import org.jsoup.Jsoup
 import java.net.URL
 import kotlin.random.Random
@@ -96,21 +97,6 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         soundFlipId = soundPool.load(this, R.raw.flip, 1)
         soundMatchId = soundPool.load(this, R.raw.match, 1)
 
-
-        val gridView = findViewById<GridView>(R.id.playGridView)
-        val filenames = intent.getStringArrayExtra("filenames")
-
-        if (filenames != null && filenames.size == 12) {
-            adapter = MyCustomAdapter(this, filenames)
-            gridView.adapter = adapter
-            gridView.onItemClickListener = this
-        } else {
-            Toast.makeText(this, "Invalid image data", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        // Set up ad image
         adImageView = findViewById(R.id.ads)
 
         // Determine user type (replace with real check)
@@ -271,7 +257,8 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private fun saveCompletionTime() {
         Thread {
-            val url = "http://10.0.2.2:5187/Home/SaveCompletionTime?completionTime=$elapsedMillis"
+            val url =
+                "${ApiConstants.BASE_URL}${ApiConstants.SAVE_TIME_ENDPOINT}?completionTime=$elapsedMillis"
             try {
                 val result = URL(url).openStream().bufferedReader().use { it.readText() }
                 runOnUiThread {

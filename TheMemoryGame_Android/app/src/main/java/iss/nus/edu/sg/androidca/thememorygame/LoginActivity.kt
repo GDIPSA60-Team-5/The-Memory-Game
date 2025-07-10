@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -77,8 +78,9 @@ class LoginActivity : AppCompatActivity() {
 
         Log.d("DEBUG", json)
 
+        val url = ApiConstants.BASE_URL + ApiConstants.LOGIN_ENDPOINT
         val request = Request.Builder()
-            .url("http://10.0.2.2:5178/api/login/login")
+            .url(url)
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()

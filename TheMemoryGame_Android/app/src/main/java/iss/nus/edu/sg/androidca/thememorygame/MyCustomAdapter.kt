@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import com.bumptech.glide.Glide
+import iss.nus.edu.sg.androidca.thememorygame.activities.PlayActivity
 import java.io.File
 
 class MyCustomAdapter(
@@ -59,26 +60,39 @@ class MyCustomAdapter(
     }
 
     private fun loadImageForPosition(position: Int, imageView: ImageView) {
-        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), filenames[position])
+        val filename = filenames[position]
+        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), filename)
+
         if (file.exists()) {
-            Glide.with(context)
-                .load(file)
-                .placeholder(R.drawable.card_back)
-                .into(imageView)
-            imageView.tag = REAL_IMAGE_TAG
+            try {
+                Glide.with(imageView.context)
+                    .load(file)
+                    .placeholder(R.drawable.card_back)
+                    .into(imageView)
+                imageView.tag = REAL_IMAGE_TAG
+            } catch (e: Exception) {
+                // Fallback to drawable if Glide fails
+                imageView.setImageResource(R.drawable.card_back)
+                imageView.tag = PLACEHOLDER_TAG
+            }
         } else {
             imageView.setImageResource(R.drawable.card_back)
             imageView.tag = PLACEHOLDER_TAG
         }
     }
 
-    // Game logic methods
     fun revealPosition(position: Int): Boolean {
         return if (canFlipCard(position)) {
             currentlyFlipped.add(position)
-            notifyDataSetChanged()
+            notifyItemChanged(position)
             true
         } else false
+    }
+
+    private fun notifyItemChanged(position: Int) {
+        if (position in 0 until count) {
+            notifyDataSetChanged()
+        }
     }
 
     private fun canFlipCard(position: Int): Boolean {

@@ -1,10 +1,9 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.utils
 
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.widget.TextView
-import iss.nus.edu.sg.androidca.thememorygame.utils.TimeUtils
 
 class GameTimer(private val timerView: TextView) {
     private val handler = Handler(Looper.getMainLooper())

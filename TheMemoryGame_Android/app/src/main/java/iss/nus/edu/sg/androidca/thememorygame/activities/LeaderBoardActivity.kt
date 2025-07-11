@@ -1,4 +1,4 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.content.Intent
 import android.graphics.Typeface
@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat
 import iss.nus.edu.sg.androidca.thememorygame.data.RecordDto
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken
+import iss.nus.edu.sg.androidca.thememorygame.R
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
 import iss.nus.edu.sg.androidca.thememorygame.utils.TimeUtils

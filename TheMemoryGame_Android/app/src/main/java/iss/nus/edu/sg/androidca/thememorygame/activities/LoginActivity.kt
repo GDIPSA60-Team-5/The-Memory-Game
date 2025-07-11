@@ -1,4 +1,4 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.R
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
 import okhttp3.*

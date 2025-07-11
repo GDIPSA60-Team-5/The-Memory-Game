@@ -1,4 +1,4 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -10,6 +10,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.MyCustomAdapter
+import iss.nus.edu.sg.androidca.thememorygame.R
 import org.jsoup.Jsoup
 import java.io.File
 import java.net.HttpURLConnection

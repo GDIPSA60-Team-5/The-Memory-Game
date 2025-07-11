@@ -2,6 +2,7 @@ package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Environment
 import android.view.View
@@ -27,6 +28,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private lateinit var urlInput: EditText
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
+    private lateinit var progressOverlay: View
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,11 +37,12 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         supportActionBar?.hide()
         setContentView(R.layout.activity_fetch)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.fetch)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainContainer)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
 
         initializeUI()
 
@@ -57,6 +60,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         urlInput = findViewById(R.id.url)
         progressBar = findViewById(R.id.progressBar)
         progressText = findViewById(R.id.progressTextView)
+        progressOverlay = findViewById<View>(R.id.progressOverlay)
 
         adapter = MyCustomAdapter(this, filenames.toTypedArray())
         gridView.adapter = adapter
@@ -107,15 +111,21 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private fun showInitialDownloadUI(total: Int) {
         runOnUiThread {
-            progressBar.apply {
-                visibility = View.VISIBLE
-                max = total
-                progress = 0
-            }
+            progressOverlay.alpha = 0f
+            progressOverlay.animate()
+                .alpha(1f)
+                .setDuration(300)
+                .withStartAction { progressOverlay.visibility = View.VISIBLE }
+                .start()
+
+            progressBar.max = total
+            progressBar.progress = 0
+            progressBar.visibility = View.VISIBLE
             progressText.text = "Starting download..."
             progressText.visibility = View.VISIBLE
         }
     }
+
 
     private fun downloadAllImages(imageUrls: List<String>, directory: File) {
         imageUrls.forEachIndexed { index, url ->
@@ -144,10 +154,14 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private fun onDownloadCompleted() {
         runOnUiThread {
-            progressText.text = "Download completed!\nSelect 6 images to start the game."
             progressBar.visibility = View.GONE
+            progressText.text = "✅ Download complete!\nSelect 6 images to start the game."
+            progressText.setTextColor(Color.parseColor("#80FFEA"))
+
+            progressOverlay.setBackgroundColor(Color.parseColor("#AA000000"))
         }
     }
+
 
     private fun showDownloadError(e: Exception) {
         e.printStackTrace()

@@ -5,104 +5,146 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Background image -->
     <ImageView
         android:id="@+id/background_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/secondary_bg"
         android:scaleType="centerCrop"
-         />
+        android:src="@drawable/secondary_bg" />
 
-    <!-- Main Container -->
-    <LinearLayout
-        android:id="@+id/fetch"
+    <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="#CC000000">
+        android:background="#66000000" />
 
-        <!-- URL Input & Fetch Button -->
-        <LinearLayout
-            android:layout_width="match_parent"
+    <!-- Main content area -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/glass_background"
+        android:clipToPadding="false"
+        android:padding="24dp">
+
+
+        <!-- Title / header -->
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/fetch_images"
+            android:textColor="#E0E0E0"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textAlignment="center"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Input and button container for nice grouping -->
+        <LinearLayout
+            android:id="@+id/inputContainer"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/glass_input_background"
+            android:clipToPadding="false"
+            android:elevation="4dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp"
-            android:gravity="center_vertical">
+            android:padding="8dp"
+            android:weightSum="5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleText">
 
             <EditText
                 android:id="@+id/url"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="match_parent"
                 android:layout_weight="4"
+                android:background="@android:color/transparent"
                 android:hint="@string/enter_the_url_to_fetch_images"
-                android:textColor="@android:color/white"
-                android:textColorHint="@android:color/darker_gray"
-                android:background="@drawable/cyber_input"
-                android:paddingHorizontal="12dp"
-                android:textSize="14sp"
                 android:inputType="textUri"
+                android:paddingHorizontal="12dp"
                 android:singleLine="true"
-                android:alpha="0.1" />
+                android:textColor="#E0E0E0"
+                android:textColorHint="#B0B0B0"
+                android:textSize="15sp" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
+                android:background="@drawable/glass_button_background"
                 android:text="@string/fetch"
-                android:textColor="#E91E63"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/cyber_button"
                 android:textAllCaps="false"
+                android:textColor="@color/light_gray"
                 android:textSize="16sp"
-                android:textStyle="bold" />
-
+                 />
         </LinearLayout>
 
-        <!-- Grid of Images -->
+        <!-- Grid of images -->
         <GridView
             android:id="@+id/imageGridView"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:numColumns="4"
-            android:horizontalSpacing="6dp"
-            android:verticalSpacing="6dp"
-            android:gravity="center"
-            android:stretchMode="columnWidth"
             android:clipToPadding="false"
-            android:padding="4dp" />
-
-        <!-- Progress Display -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginTop="12dp"
-            android:paddingBottom="16dp">
+            android:horizontalSpacing="8dp"
+            android:numColumns="4"
+            android:padding="4dp"
+            android:stretchMode="columnWidth"
+            android:verticalSpacing="8dp"
+            app:layout_constraintBottom_toTopOf="@id/progressOverlay"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/inputContainer" />
 
-            <ProgressBar
-                android:id="@+id/progressBar"
+        <!-- Floating progress overlay -->
+        <FrameLayout
+            android:visibility="gone"
+            android:id="@+id/progressOverlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="#66000000"
+            android:clipToPadding="false"
+            android:padding="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:progressDrawable="@drawable/futuristic_progress"
-                android:visibility="invisible"
-                android:max="100"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:indeterminate="false"
-                android:padding="8dp" />
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/progressTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:visibility="invisible"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:textAlignment="center"
-                android:layout_marginTop="6dp" />
-        </LinearLayout>
-    </LinearLayout>
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:indeterminate="false"
+                    android:max="100"
+                    android:progressDrawable="@drawable/glass_progress_drawable" />
+
+                <TextView
+                    android:id="@+id/progressTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAlignment="center"
+                    android:textColor="#E0E0E0"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

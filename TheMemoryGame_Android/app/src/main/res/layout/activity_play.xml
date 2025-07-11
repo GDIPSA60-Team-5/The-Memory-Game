@@ -13,11 +13,13 @@
         android:scaleType="centerCrop"
         android:src="@drawable/secondary_bg" />
 
+    <!-- Semi-transparent overlay -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#66000000" />
 
+    <!-- Main vertical container -->
     <LinearLayout
         android:id="@+id/play"
         android:layout_width="match_parent"
@@ -25,6 +27,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Top stats bar: matches and timer -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -32,18 +35,21 @@
             android:layout_marginBottom="12dp"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
+            android:baselineAligned="false"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingHorizontal="16dp"
             android:elevation="6dp"
             android:background="@drawable/glass_panel">
 
+            <!-- Matches display -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
+
 
                 <ImageView
                     android:layout_width="24dp"
@@ -63,6 +69,7 @@
                     android:fontFamily="monospace" />
             </LinearLayout>
 
+            <!-- Timer display -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -74,7 +81,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_timer"
-                    app:tint="#64D2FF" /> <!-- Softer cyan -->
+                    app:tint="#64D2FF" />
 
                 <TextView
                     android:id="@+id/timer"
@@ -89,6 +96,7 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Grid for cards -->
         <GridView
             android:id="@+id/playGridView"
             android:layout_width="match_parent"
@@ -102,6 +110,7 @@
             android:stretchMode="columnWidth"
             android:clipToPadding="false" />
 
+        <!-- Ad banner placeholder (hidden by default) -->
         <ImageView
             android:id="@+id/ads"
             android:layout_width="match_parent"

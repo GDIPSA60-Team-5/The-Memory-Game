@@ -43,7 +43,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Input and button container for nice grouping -->
+        <!-- Input and button container -->
         <LinearLayout
             android:id="@+id/inputContainer"
             android:layout_width="0dp"

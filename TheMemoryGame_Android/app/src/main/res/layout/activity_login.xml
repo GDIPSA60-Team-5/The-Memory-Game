@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Logo centered between top and form -->
+        <!-- App Logo -->
         <ImageView
             android:id="@+id/logo"
             android:layout_width="300dp"
@@ -38,7 +38,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.7" />
 
-        <!-- Login form pinned to bottom -->
+        <!-- Login Form -->
         <LinearLayout
             android:id="@+id/formContainer"
             android:layout_width="0dp"

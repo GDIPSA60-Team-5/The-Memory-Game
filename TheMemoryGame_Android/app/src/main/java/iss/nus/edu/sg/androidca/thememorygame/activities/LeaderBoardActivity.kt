@@ -33,6 +33,7 @@ class LeaderBoardActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        supportActionBar?.hide()
         setContentView(R.layout.activity_leader_board)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.leader_board)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())

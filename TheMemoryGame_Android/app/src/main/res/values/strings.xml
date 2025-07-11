@@ -8,4 +8,5 @@
     <string name="matches_format">%1$d/6 matches</string>
 
     <string name="background">Futuristic Background Image</string>
+    <string name="ad_banner_desc">Advertisement banner</string>
 </resources>

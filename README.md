@@ -66,6 +66,8 @@ This is a full-stack Android application built for the Android CA project, consi
 
    The API should be available at `http://localhost:5178`.
 
+Here’s your revised section with the **port consistency reminder** added clearly:
+
 
 ### 2. 📱 Set up the Android App
 
@@ -79,12 +81,12 @@ This is a full-stack Android application built for the Android CA project, consi
    const val BASE_URL = "http://10.0.2.2:5178"
    ```
 
-   🔧 **What is `10.0.2.2`?**
-   This IP points to your host machine when using the Android emulator. It works **only on the emulator**.
+   ⚠️ If you are testing on a **physical Android device**, replace `10.0.2.2` with the **computer’s local IP address** (e.g., `http://192.168.x.x:5178`).
 
-   ⚠️ If you are testing on a **physical Android device**, replace it with your **computer's local IP address** (e.g., `http://192.168.x.x:5178`), and make sure both the device and your machine are on the same Wi-Fi network.
+   🚨 **Important:** Make sure the **port number (`5178`)** matches the port your backend is running on (see the console output after running `dotnet run`).
 
 4. Build and run the app.
+
 
 ## 🎮 Game Features
 

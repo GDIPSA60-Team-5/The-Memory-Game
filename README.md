@@ -1,9 +1,23 @@
-# 🧠 The Memory Game Project
+<h1 align="center">🧠 FlipACard: Android Memory Game </h1>
+<p align="center">
+  <img src=".github/assets/preview.png" alt="Memory Game Preview" width="250" />
+</p>
 
-This is a full-stack Android application built for the Android CA project, consisting of:
 
-- **TheMemoryGame_Android** – the memory card-matching game for Android.
-- **TheMemoryGame_Backend** – a C# .NET 8 REST API backend with leaderboard support and MySQL database integration.
+<p align="center">
+  <a href="https://dotnet.microsoft.com/en-us/download" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/badge/.NET-8-blue" alt=".NET 8"/>
+  </a>
+  <a href="https://developer.android.com/studio" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/badge/Android%20Studio-IDE-green" alt="Android Studio"/>
+  </a>
+  <a href="https://dev.mysql.com/downloads/" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/badge/MySQL-8+-blue" alt="MySQL 8+"/>
+  </a>
+  <a href="https://github.com/yourusername/TheMemoryGame/blob/main/LICENSE" target="_blank" rel="noopener">
+    <img src="https://img.shields.io/github/license/yourusername/TheMemoryGame" alt="License"/>
+  </a>
+</p>
 
 
 ## 📁 Project Structure
@@ -13,6 +27,7 @@ This is a full-stack Android application built for the Android CA project, consi
 📄 DummyData.sql            → Sample MySQL data
 📄 .gitignore
 📄 README.md
+
 ```
 
 ## ⚙️ Prerequisites
@@ -20,13 +35,15 @@ This is a full-stack Android application built for the Android CA project, consi
 ### Android App:
 - Android Studio
 - Minimum SDK: 24 (Android 7.0)
-- Internet connection (for image & advertisment calls)
+- Internet connection (for image & advertisement calls)
 
 ### Backend:
 - [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
 - [MySQL 8+](https://dev.mysql.com/downloads/)
 - Visual Studio 2022+ or VS Code (optional)
-- Postman or any API testing tool (optional for testing endpoints)
+- Postman or any API testing tool (optional)
+
+
 
 ## 🛠️ Setup Instructions
 
@@ -35,58 +52,54 @@ This is a full-stack Android application built for the Android CA project, consi
 1. Open the `TheMemoryGame_Backend` folder.
 2. Open `appsettings.json` and **edit the database connection string** under `ConnectionStrings`:
 
-   ```json
-   {
-     "Logging": {
-       "LogLevel": {
-         "Default": "Information",
-         "Microsoft.AspNetCore": "Warning"
-       }
-     },
-     "AllowedHosts": "*",
-     "ConnectionStrings": {
-       "DefaultConnection": "server=localhost;database=TheMemoryGame;user=root;password=root;"
-     }
-   }
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "server=localhost;database=TheMemoryGame;user=root;password=root;"
+  }
+}
+````
 
-🔧 Replace `server`, `user`, and `password` with your actual MySQL database configuration.
+🔧 Replace `server`, `user`, and `password` with your actual MySQL configuration.
 
 3. Import `DummyData.sql` into your MySQL database:
 
-   ```bash
-   mysql -u root -p < DummyData.sql
-   ```
+```bash
+mysql -u root -p < DummyData.sql
+```
 
 4. Run the backend API:
 
-   ```bash
-   cd TheMemoryGame_Backend
-   dotnet run
-   ```
+```bash
+cd TheMemoryGame_Backend
+dotnet run
+```
 
-   The API should be available at `http://localhost:5178`.
+The API should be available at `http://localhost:5178`.
 
-Here’s your revised section with the **port consistency reminder** added clearly:
 
 
 ### 2. 📱 Set up the Android App
 
 1. Open `TheMemoryGame_Android` in Android Studio.
+2. Ensure the device/emulator has internet access.
+3. In `ApiConstants.kt`, update the base URL:
 
-2. Make sure the device or emulator has internet access.
+```kotlin
+const val BASE_URL = "http://10.0.2.2:5178"
+```
 
-3. In `ApiConstants.kt`, the base URL is hardcoded as:
-
-   ```kotlin
-   const val BASE_URL = "http://10.0.2.2:5178"
-   ```
-
-   ⚠️ If you are testing on a **physical Android device**, replace `10.0.2.2` with the **computer’s local IP address** (e.g., `http://192.168.x.x:5178`).
-
-   🚨 **Important:** Make sure the **port number (`5178`)** matches the port your backend is running on (see the console output after running `dotnet run`).
+⚠️ For **physical devices**, replace `10.0.2.2` with your computer's LAN IP (e.g., `http://192.168.x.x:5178`).  
+⚠️ Make sure the port (`5178`) matches with the backend server dotnet console output.
 
 4. Build and run the app.
-
 
 ## 🎮 Game Features
 
@@ -96,12 +109,11 @@ Here’s your revised section with the **port consistency reminder** added clear
 * 🖼️ Fetches card images from [StockSnap.io](https://stocksnap.io)
 * 🏆 Leaderboard with top 5 scores and personal rank
 * 🔊 Audio feedback and animations
-* 📢 Ad display based on user type (free or paid)
+* 📢 Ads displayed based on user type (free/paid)
 
 
 
 ## 🧪 Sample Test Credentials
-
 
 ```
 Username: aung
@@ -110,24 +122,24 @@ Password: aung123
 
 
 
-## 📝 Notes
 
-* Ensure both the **backend API** and **MySQL** are running before launching the app.
-* `DummyData.sql` contains sample leaderboard records you can replace or expand.
+## 💌 Credits
 
+This project was developed as part of the Android CA coursework by **GDIPSA60 Team 5**.
 
-## 👨‍🏫 Checklist Before Running
-
-✅ Please ensure you:
-
-* Have MySQL installed and the connection string updated in `appsettings.json`
-* Import `DummyData.sql` to create and populate the database
-* Start the backend before testing the Android app
-* Use `dotnet run` in the `TheMemoryGame_Backend` folder to launch the API
-
-That's all. Thank you for checking our project!
+### Contributors
+- [@paulphyo](https://github.com/paulphyo)
+- [@haziqjamil1](https://github.com/haziqjamil1)
+- [@Ammoe](https://github.com/Ammmoe)
+- [@Jinger-ui](https://github.com/Jinger-ui)
+- [@coderbang-bang](https://github.com/coderbang-bang)
+- [@Carry-Rui](https://github.com/Carry-Rui)
 
 
----
+### Special Thanks
+- Our instructors and teaching assistants for their guidance  
+- Open source communities whose tools and libraries we utilized  
+
 
 © 2025 The Memory Game CA Project
+

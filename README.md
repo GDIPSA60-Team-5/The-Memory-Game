@@ -137,7 +137,7 @@ This project was developed as part of the Android CA coursework by **GDIPSA60 Te
 
 
 ### Special Thanks
-- Our instructors and teaching assistants for their guidance  
+- Our instructors for their guidance  
 - Open source communities whose tools and libraries we utilized  
 
 

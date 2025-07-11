@@ -8,9 +8,12 @@ import android.util.Log
 import android.widget.ImageView
 import com.bumptech.glide.Glide
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
+import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
+import okhttp3.Request
 import org.jsoup.Jsoup
 import java.io.File
-import kotlin.random.Random
+import java.net.HttpURLConnection
+import java.net.URL
 
 class AdRotator(
     private val context: Context,
@@ -22,60 +25,68 @@ class AdRotator(
     private var localAdFiles: List<File> = emptyList()
     private var isActive = false
 
-    /**
-     * Starts downloading ads and begins rotation if not already started.
-     */
     fun start() {
-        if (isActive) return // Avoid multiple starts
-
+        if (isActive) return
         isActive = true
-        imageView.visibility = ImageView.VISIBLE
 
         Thread {
-            try {
-                // Fetch ad image URLs from server
-                val doc = Jsoup.connect(ApiConstants.HOST)
-                    .userAgent("Mozilla")
-                    .get()
-
-                val imgElements = doc.select("img")
-                val adImageUrls = TimeUtils.scrapeImages(imgElements, 11)
-
-                // Prepare local filenames
-                val adFilenames = (1..11).map { index ->
-                    if (index < 10) "ad_0$index.png" else "ad_$index.png"
+            val canSeeAds = checkCanSeeAds()
+            handler.post {
+                if (canSeeAds) {
+                    imageView.visibility = ImageView.VISIBLE
+                    loadAdsAndStart()
+                } else {
+                    imageView.visibility = ImageView.GONE
                 }
+            }
+        }.start()
+    }
 
-                // Download images to local files
+    private fun checkCanSeeAds(): Boolean {
+        return try {
+            val request = Request.Builder()
+                .url(ApiConstants.CAN_SEE_ADS)
+                .get()
+                .build()
+
+            val response = HttpClientProvider.client.newCall(request).execute()
+            val body = response.body?.string()?.trim()
+
+            Log.d("AdRotator", "Ads visibility check response: $body")
+
+            body == "true" || body == "\"true\""
+        } catch (e: Exception) {
+            Log.e("AdRotator", "Failed to check ads visibility", e)
+            false
+        }
+    }
+
+    private fun loadAdsAndStart() {
+        Thread {
+            try {
+                val doc = Jsoup.connect(ApiConstants.HOST).userAgent("Mozilla").get()
+                val adImageUrls = TimeUtils.scrapeImages(doc.select("img"), 11)
+                val adFilenames = (1..11).map { "ad_${if (it < 10) "0$it" else it}.png" }
+
                 localAdFiles = adFilenames.mapIndexed { index, filename ->
                     val file = TimeUtils.makeFile(context, filename)
                     TimeUtils.downloadToFile(adImageUrls[index], file)
                     file
                 }
 
-                Log.d("AdRotator", "Downloaded ads: $localAdFiles")
-
-                // Start the ad rotation only if still active
-                if (isActive) {
-                    startRotation()
-                }
+                if (isActive) startRotation()
             } catch (e: Exception) {
                 Log.e("AdRotator", "Failed to load ads", e)
             }
         }.start()
     }
 
-    /**
-     * Starts the ad rotation Runnable that cycles ads at [rotationInterval].
-     */
     private fun startRotation() {
         rotationRunnable = object : Runnable {
             override fun run() {
                 if (!isActive || localAdFiles.isEmpty()) return
 
-                // Check if context is valid before loading
                 if (context is Activity && (context.isFinishing || context.isDestroyed)) {
-                    Log.d("AdRotator", "Activity is finishing or destroyed, stopping rotation")
                     stop()
                     return
                 }
@@ -92,30 +103,21 @@ class AdRotator(
                     Log.e("AdRotator", "Error loading ad image", e)
                 }
 
-                if (isActive) {
-                    handler.postDelayed(this, rotationInterval)
-                }
+                if (isActive) handler.postDelayed(this, rotationInterval)
             }
         }
         handler.post(rotationRunnable!!)
     }
 
-    /**
-     * Stops the ad rotation and clears resources safely.
-     * @param isDestroying If true, avoids Glide usage to prevent loading into a destroyed context.
-     */
     fun stop(isDestroying: Boolean = false) {
         isActive = false
-
-        // Remove all scheduled tasks
         handler.removeCallbacksAndMessages(null)
 
-        // Attempt to safely clear the ad image
         if (!isDestroying) {
             try {
                 Glide.with(imageView.context).clear(imageView)
             } catch (e: Exception) {
-                Log.e("AdRotator", "Failed to clear image with Glide", e)
+                Log.e("AdRotator", "Failed to clear image", e)
             }
         }
 

@@ -9,4 +9,6 @@ object ApiConstants {
     const val TOP_FIVE = "$BASE/home/top5"
     const val FIND_RANK = "$BASE/home/rank"
     const val USERNAME = "$BASE/home/me"
+
+    const val CAN_SEE_ADS = "$BASE/home/user/can-see-ads"
 }

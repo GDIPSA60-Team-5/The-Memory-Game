@@ -24,8 +24,8 @@ import iss.nus.edu.sg.androidca.thememorygame.utils.TimeUtils
 import okhttp3.Request
 import java.io.IOException
 
-
 class LeaderBoardActivity : AppCompatActivity() {
+
     private val client = HttpClientProvider.client
     private var victorySoundPlayer: MediaPlayer? = null
 
@@ -35,22 +35,41 @@ class LeaderBoardActivity : AppCompatActivity() {
         supportActionBar?.hide()
         setContentView(R.layout.activity_leader_board)
 
+        applyWindowInsets()
+        playVictorySound()
+
+        val completionTime = intent.getLongExtra("completion_time", 0L)
+        displayCurrentCompletionTime(completionTime)
+        setupCloseButton()
+
+        fetchAndDisplayLeaderboard(completionTime)
+    }
+
+    private fun applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.leader_board)) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
 
+    private fun playVictorySound() {
         victorySoundPlayer = MediaPlayer.create(this, R.raw.transition).apply { start() }
+    }
 
-        val completionTime = intent.getLongExtra("completion_time", 0L)
-        findViewById<TextView>(R.id.current_completion_time).text = TimeUtils.formatElapsedTime(completionTime)
+    private fun displayCurrentCompletionTime(completionTime: Long) {
+        findViewById<TextView>(R.id.current_completion_time).text =
+            TimeUtils.formatElapsedTime(completionTime)
+    }
 
+    private fun setupCloseButton() {
         findViewById<Button>(R.id.close_button).setOnClickListener {
             startActivity(Intent(this, FetchActivity::class.java))
             finish()
         }
+    }
 
+    private fun fetchAndDisplayLeaderboard(completionTime: Long) {
         val tableLayout = findViewById<TableLayout>(R.id.leaderboard_table)
         Thread {
             try {
@@ -74,38 +93,42 @@ class LeaderBoardActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun fetchTop5(): List<RecordDto> {
-        val request = Request.Builder().url(ApiConstants.TOP_FIVE).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            val body = response.body?.string() ?: throw IOException("Empty body")
-            val type = object : TypeToken<List<RecordDto>>() {}.type
-            return Gson().fromJson(body, type)
+    // Networking methods
+    @Throws(IOException::class)
+    private fun fetchTop5(): List<RecordDto> = client.newCall(
+        Request.Builder().url(ApiConstants.TOP_FIVE).build()
+    ).execute().use { response ->
+        checkResponse(response)
+        val body = response.body?.string() ?: throw IOException("Empty body")
+        val type = object : TypeToken<List<RecordDto>>() {}.type
+        Gson().fromJson(body, type)
+    }
+
+    @Throws(IOException::class)
+    private fun fetchRank(completionTime: Long): Int = client.newCall(
+        Request.Builder().url("${ApiConstants.FIND_RANK}?time=$completionTime").build()
+    ).execute().use { response ->
+        checkResponse(response)
+        val body = response.body?.string() ?: throw IOException("Empty body")
+        body.toInt()
+    }
+
+    @Throws(Exception::class)
+    private fun fetchUsername(): String = client.newCall(
+        Request.Builder().url(ApiConstants.USERNAME).build()
+    ).execute().use { response ->
+        when {
+            response.code == 401 -> throw Exception("Not logged in")
+            !response.isSuccessful -> throw IOException("Unexpected code $response")
+            else -> response.body?.string()?.replace("\"", "") ?: throw IOException("Empty body")
         }
     }
 
-    private fun fetchRank(completionTime: Long): Int {
-        val request = Request.Builder()
-            .url("${ApiConstants.FIND_RANK}?time=$completionTime")
-            .build()
-
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            val body = response.body?.string() ?: throw IOException("Empty body")
-            return body.toInt()
-        }
+    private fun checkResponse(response: okhttp3.Response) {
+        if (!response.isSuccessful) throw IOException("Unexpected code $response")
     }
 
-    private fun fetchUsername(): String {
-        val request = Request.Builder().url(ApiConstants.USERNAME).build()
-
-        client.newCall(request).execute().use { response ->
-            if (response.code == 401) throw Exception("Not logged in")
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            return response.body?.string()?.replace("\"", "") ?: throw IOException("Empty body")
-        }
-    }
-
+    // UI display logic
     private fun displayLeaderBoard(
         tableLayout: TableLayout,
         records: List<RecordDto>,
@@ -113,25 +136,28 @@ class LeaderBoardActivity : AppCompatActivity() {
         rank: Int,
         username: String
     ) {
-        if (tableLayout.childCount > 1) {
-            tableLayout.removeViews(1, tableLayout.childCount - 1)
-        }
+        clearTableExceptHeader(tableLayout)
 
         val currentUserInTop5 = records.any { it.completionTime == currentTime && it.name == username }
 
         records.forEachIndexed { index, record ->
-            val highlight = (record.completionTime == currentTime) && (record.name == username)
-            val row = createTableRowFromLayout(index + 1, record.name, record.completionTime, highlight, tableLayout)
-            tableLayout.addView(row)
+            val highlight = record.completionTime == currentTime && record.name == username
+            tableLayout.addView(createTableRow(index + 1, record.name, record.completionTime, highlight, tableLayout))
         }
 
         if (!currentUserInTop5) {
-            if (rank > 6) addDotsRow(tableLayout)
-            addCurrentUserRow(tableLayout, currentTime, rank, username)
+            if (rank > 6) addEllipsisRow(tableLayout)
+            addCurrentUserRow(tableLayout, rank, username, currentTime)
         }
     }
 
-    private fun addDotsRow(tableLayout: TableLayout) {
+    private fun clearTableExceptHeader(tableLayout: TableLayout) {
+        if (tableLayout.childCount > 1) {
+            tableLayout.removeViews(1, tableLayout.childCount - 1)
+        }
+    }
+
+    private fun addEllipsisRow(tableLayout: TableLayout) {
         val dotsRow = TableRow(this)
         val dots = TextView(this).apply {
             text = "⋮"
@@ -139,20 +165,18 @@ class LeaderBoardActivity : AppCompatActivity() {
             textSize = 22f
             setPadding(8, 8, 8, 8)
             setTextColor(Color.WHITE)
+            layoutParams = TableRow.LayoutParams().apply { span = 3 }
         }
-        val span = TableRow.LayoutParams().apply { span = 3 }
-        dots.layoutParams = span
-
         dotsRow.addView(dots)
         tableLayout.addView(dotsRow)
     }
 
-    private fun addCurrentUserRow(tableLayout: TableLayout, currentTime: Long, rank: Int, username: String) {
-        val row = createTableRowFromLayout(rank, username, currentTime, highlight = true, parent = tableLayout)
+    private fun addCurrentUserRow(tableLayout: TableLayout, rank: Int, username: String, currentTime: Long) {
+        val row = createTableRow(rank, username, currentTime, highlight = true, parent = tableLayout)
         tableLayout.addView(row)
     }
 
-    private fun createTableRowFromLayout(
+    private fun createTableRow(
         rank: Int,
         name: String,
         time: Long,
@@ -162,19 +186,21 @@ class LeaderBoardActivity : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
         val row = inflater.inflate(R.layout.leaderboard_row, parent, false) as TableRow
 
-        val rankView = row.findViewById<TextView>(R.id.rankView)
-        val nameView = row.findViewById<TextView>(R.id.nameView)
-        val timeView = row.findViewById<TextView>(R.id.timeView)
-
-        rankView.text = rank.toString()
-        nameView.text = name
-        timeView.text = TimeUtils.formatElapsedTime(time)
+        row.findViewById<TextView>(R.id.rankView).apply {
+            text = rank.toString()
+            setTypeface(null, if (highlight) Typeface.BOLD else Typeface.NORMAL)
+        }
+        row.findViewById<TextView>(R.id.nameView).apply {
+            text = name
+            setTypeface(null, if (highlight) Typeface.BOLD else Typeface.NORMAL)
+        }
+        row.findViewById<TextView>(R.id.timeView).apply {
+            text = TimeUtils.formatElapsedTime(time)
+            setTypeface(null, if (highlight) Typeface.BOLD else Typeface.NORMAL)
+        }
 
         if (highlight) {
             row.setBackgroundColor("#3355BBDD".toColorInt())
-            rankView.setTypeface(null, Typeface.BOLD)
-            nameView.setTypeface(null, Typeface.BOLD)
-            timeView.setTypeface(null, Typeface.BOLD)
         }
 
         return row

@@ -1,6 +1,7 @@
 package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Typeface
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -10,6 +11,7 @@ import android.view.LayoutInflater
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
@@ -21,7 +23,7 @@ import iss.nus.edu.sg.androidca.thememorygame.data.RecordDto
 import iss.nus.edu.sg.androidca.thememorygame.utils.TimeUtils
 import okhttp3.Request
 import java.io.IOException
-import androidx.core.graphics.toColorInt
+
 
 class LeaderBoardActivity : AppCompatActivity() {
     private val client = HttpClientProvider.client
@@ -136,6 +138,7 @@ class LeaderBoardActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             textSize = 22f
             setPadding(8, 8, 8, 8)
+            setTextColor(Color.WHITE)
         }
         val span = TableRow.LayoutParams().apply { span = 3 }
         dots.layoutParams = span

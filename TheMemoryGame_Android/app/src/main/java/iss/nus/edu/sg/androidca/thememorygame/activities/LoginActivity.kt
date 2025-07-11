@@ -1,4 +1,4 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.R
 import iss.nus.edu.sg.androidca.thememorygame.api.ApiConstants
 import iss.nus.edu.sg.androidca.thememorygame.api.HttpClientProvider
 import okhttp3.*
@@ -21,7 +22,7 @@ import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
     private val client = HttpClientProvider.client
-
+    private val apiUrl = ApiConstants.LOGIN
 
     private lateinit var loginBtn: AppCompatButton
     private lateinit var loginSpinner: View
@@ -80,9 +81,8 @@ class LoginActivity : AppCompatActivity() {
 
         Log.d("DEBUG", json)
 
-        val url = ApiConstants.BASE_URL + ApiConstants.LOGIN_ENDPOINT
         val request = Request.Builder()
-            .url(url)
+            .url(apiUrl)
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()
@@ -98,8 +98,11 @@ class LoginActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                response.use {  // ✅ auto-close
+                response.use {
                     val statusCode = it.code
+                    val errorBody = it.body?.string()
+
+
                     runOnUiThread {
                         toggleLoading(false)
                         if (it.isSuccessful) {
@@ -108,7 +111,6 @@ class LoginActivity : AppCompatActivity() {
                             startActivity(intent)
                             finish()
                         } else {
-                            val errorBody = it.body?.string()
                             Toast.makeText(
                                 this@LoginActivity,
                                 "Login failure: HTTP $statusCode\n$errorBody",
@@ -118,7 +120,6 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
             }
-
         })
     }
 }

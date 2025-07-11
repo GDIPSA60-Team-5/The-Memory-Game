@@ -1,27 +1,22 @@
-package iss.nus.edu.sg.androidca.thememorygame
+package iss.nus.edu.sg.androidca.thememorygame.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Environment
-import android.widget.Button
-import android.widget.EditText
-import android.widget.GridView
+import android.view.View
+import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import iss.nus.edu.sg.androidca.thememorygame.MyCustomAdapter
+import iss.nus.edu.sg.androidca.thememorygame.R
 import org.jsoup.Jsoup
 import java.io.File
-import java.net.URL
-import android.util.Log
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
 import java.net.HttpURLConnection
+import java.net.URL
 
 class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private val filenames = (1..20).map { "$it.jpg" }
@@ -33,34 +28,24 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private lateinit var urlInput: EditText
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
-
-    private fun initializeUI() {
-        gridView = findViewById(R.id.imageGridView)
-        urlInput = findViewById(R.id.url)
-        progressBar = findViewById(R.id.progressBar)
-        progressText = findViewById(R.id.progressTextView)
-
-        adapter = MyCustomAdapter(this, filenames.toTypedArray())
-        gridView.adapter = adapter
-    }
-
-    private fun getImageDir(): File? {
-        return getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    }
+    private lateinit var progressOverlay: View
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        supportActionBar?.hide()
         setContentView(R.layout.activity_fetch)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.fetch)) { v, insets ->
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainContainer)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+
         initializeUI()
 
-        // Delete previously downloaded images on launch
         getImageDir()?.let { deleteExistingImages(it) }
 
         findViewById<Button>(R.id.btn).setOnClickListener {
@@ -68,6 +53,21 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
 
         gridView.onItemClickListener = this
+    }
+
+    private fun initializeUI() {
+        gridView = findViewById(R.id.imageGridView)
+        urlInput = findViewById(R.id.url)
+        progressBar = findViewById(R.id.progressBar)
+        progressText = findViewById(R.id.progressTextView)
+        progressOverlay = findViewById<View>(R.id.progressOverlay)
+
+        adapter = MyCustomAdapter(this, filenames.toTypedArray())
+        gridView.adapter = adapter
+    }
+
+    private fun getImageDir(): File? {
+        return getExternalFilesDir(Environment.DIRECTORY_PICTURES)
     }
 
     private fun fetchImages() {
@@ -80,9 +80,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
                 val imageUrls = scrapeImageUrlsFromInput()
                 showInitialDownloadUI(imageUrls.size)
-
                 downloadAllImages(imageUrls, imageDir)
-
                 onDownloadCompleted()
 
             } catch (e: Exception) {
@@ -91,17 +89,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
         bgThread?.start()
     }
-    private fun showInitialDownloadUI(total: Int) {
-        runOnUiThread {
-            progressBar.apply {
-                visibility = View.VISIBLE
-                max = total
-                progress = 0
-            }
-            progressText.text = "Starting download..."
-            progressText.visibility = View.VISIBLE
-        }
-    }
+
     private fun prepareForNewFetch(directory: File) {
         deleteExistingImages(directory)
         runOnUiThread {
@@ -109,6 +97,7 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             clearSelectionHighlights()
         }
     }
+
     @Throws(Exception::class)
     private fun scrapeImageUrlsFromInput(imageCount: Int = 20): List<String> {
         val pageUrl = urlInput.text.toString()
@@ -119,6 +108,24 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
             .distinct()
             .take(imageCount)
     }
+
+    private fun showInitialDownloadUI(total: Int) {
+        runOnUiThread {
+            progressOverlay.alpha = 0f
+            progressOverlay.animate()
+                .alpha(1f)
+                .setDuration(300)
+                .withStartAction { progressOverlay.visibility = View.VISIBLE }
+                .start()
+
+            progressBar.max = total
+            progressBar.progress = 0
+            progressBar.visibility = View.VISIBLE
+            progressText.text = "Starting download..."
+            progressText.visibility = View.VISIBLE
+        }
+    }
+
 
     private fun downloadAllImages(imageUrls: List<String>, directory: File) {
         imageUrls.forEachIndexed { index, url ->
@@ -147,10 +154,14 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     private fun onDownloadCompleted() {
         runOnUiThread {
-            progressText.text = "Download completed!\nSelect 6 images to start the game."
             progressBar.visibility = View.GONE
+            progressText.text = "✅ Download complete!\nSelect 6 images to start the game."
+            progressText.setTextColor(Color.parseColor("#80FFEA"))
+
+            progressOverlay.setBackgroundColor(Color.parseColor("#AA000000"))
         }
     }
+
 
     private fun showDownloadError(e: Exception) {
         e.printStackTrace()
@@ -171,28 +182,28 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private fun clearSelectionHighlights() {
         selectedPositions.forEach { pos ->
             val child = gridView.getChildAt(pos)
-            val imageView = child?.findViewById<ImageView>(R.id.imageView)
-            val tickView = child?.findViewById<ImageView>(R.id.tickView)
-            updateImageSelectionUI(imageView, tickView, false)
+            val front = child?.findViewById<ImageView>(R.id.cardFront)
+            val tick = child?.findViewById<ImageView>(R.id.tickView)
+            updateImageSelectionUI(front, tick, false)
         }
         selectedPositions.clear()
     }
 
     override fun onItemClick(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-        val imageView = view?.findViewById<ImageView>(R.id.imageView)
+        val cardFront = view?.findViewById<ImageView>(R.id.cardFront)
         val tickView = view?.findViewById<ImageView>(R.id.tickView)
 
-        if (imageView?.tag == "placeholder") {
+        if (cardFront?.tag == "placeholder") {
             Toast.makeText(this, "Please select only real images", Toast.LENGTH_SHORT).show()
             return
         }
 
         if (selectedPositions.contains(pos)) {
             selectedPositions.remove(pos)
-            updateImageSelectionUI(imageView, tickView, false)
+            updateImageSelectionUI(cardFront, tickView, false)
         } else {
             selectedPositions.add(pos)
-            updateImageSelectionUI(imageView, tickView, true)
+            updateImageSelectionUI(cardFront, tickView, true)
 
             if (selectedPositions.size == 6) {
                 startGameWithSelectedImages()
@@ -200,17 +211,17 @@ class FetchActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
-    private fun updateImageSelectionUI(imageView: ImageView?, tickView: ImageView?, isSelected: Boolean) {
+    private fun updateImageSelectionUI(front: ImageView?, tick: ImageView?, isSelected: Boolean) {
         if (isSelected) {
-            imageView?.alpha = 0.5f
-            imageView?.scaleX = 1.1f
-            imageView?.scaleY = 1.1f
-            tickView?.visibility = View.VISIBLE
+            front?.alpha = 0.5f
+            front?.scaleX = 1.1f
+            front?.scaleY = 1.1f
+            tick?.visibility = View.VISIBLE
         } else {
-            imageView?.alpha = 1.0f
-            imageView?.scaleX = 1.0f
-            imageView?.scaleY = 1.0f
-            tickView?.visibility = View.GONE
+            front?.alpha = 1.0f
+            front?.scaleX = 1.0f
+            front?.scaleY = 1.0f
+            tick?.visibility = View.GONE
         }
     }
 

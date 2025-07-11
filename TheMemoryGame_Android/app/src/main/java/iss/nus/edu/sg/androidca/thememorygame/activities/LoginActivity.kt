@@ -98,8 +98,11 @@ class LoginActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                response.use {  // ✅ auto-close
+                response.use {
                     val statusCode = it.code
+                    val errorBody = it.body?.string()
+
+
                     runOnUiThread {
                         toggleLoading(false)
                         if (it.isSuccessful) {
@@ -108,7 +111,6 @@ class LoginActivity : AppCompatActivity() {
                             startActivity(intent)
                             finish()
                         } else {
-                            val errorBody = it.body?.string()
                             Toast.makeText(
                                 this@LoginActivity,
                                 "Login failure: HTTP $statusCode\n$errorBody",
@@ -118,7 +120,6 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
             }
-
         })
     }
 }

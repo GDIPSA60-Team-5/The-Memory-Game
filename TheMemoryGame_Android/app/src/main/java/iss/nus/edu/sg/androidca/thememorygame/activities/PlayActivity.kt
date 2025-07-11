@@ -32,21 +32,26 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         private const val MAX_FLIPPED_CARDS = 2
     }
 
+    // UI Components
+    private lateinit var gridView: GridView
+    private lateinit var matchesView: TextView
+
+    // Game Components
     private lateinit var adapter: MyCustomAdapter
     private lateinit var timer: GameTimer
     private lateinit var soundManager: SoundManager
     private lateinit var adRotator: AdRotator
-    private lateinit var gridView: GridView
-    private lateinit var matchesView: TextView
 
+    // Animation Resources
+    private lateinit var flipOutAnimator: Animator
+    private lateinit var flipInAnimator: Animator
+
+    // Game State
     private var gameStarted = false
     private var gameWon = false
     private var startTime = 0L
     private var elapsedMillis = 0L
     private var isDestroying = false
-
-    private lateinit var flipOutRes: Animator
-    private lateinit var flipInRes: Animator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,11 +60,11 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         setContentView(R.layout.activity_play)
 
         initializeViews()
-        applyInsets()
+        applyWindowInsets()
         initializeAnimators()
-        initializeComponents()
+        initializeGameComponents()
 
-        val filenames = getImageFilenames()
+        val filenames = getValidatedImageFilenames()
         if (filenames == null) {
             handleInvalidImageData()
             return
@@ -73,33 +78,29 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         matchesView = findViewById(R.id.matches)
     }
 
-    private fun applyInsets() {
+    private fun applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.play)) { view, insets ->
-            val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(sys.left, sys.top, sys.right, sys.bottom)
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
 
     private fun initializeAnimators() {
-        flipOutRes = AnimatorInflater.loadAnimator(this, R.animator.flip_out)
-        flipInRes = AnimatorInflater.loadAnimator(this, R.animator.flip_in)
+        flipOutAnimator = AnimatorInflater.loadAnimator(this, R.animator.flip_out)
+        flipInAnimator = AnimatorInflater.loadAnimator(this, R.animator.flip_in)
     }
 
-    private fun initializeComponents() {
+    private fun initializeGameComponents() {
         timer = GameTimer(findViewById(R.id.timer))
         soundManager = SoundManager(this)
         adRotator = AdRotator(this, findViewById(R.id.ads))
         adRotator.start()
     }
 
-    private fun getImageFilenames(): Array<String>? {
+    private fun getValidatedImageFilenames(): Array<String>? {
         val filenames = intent.getStringArrayExtra("filenames")
-        return if (filenames != null && filenames.size == REQUIRED_IMAGE_COUNT) {
-            filenames
-        } else {
-            null
-        }
+        return if (filenames?.size == REQUIRED_IMAGE_COUNT) filenames else null
     }
 
     private fun handleInvalidImageData() {
@@ -129,7 +130,16 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
     override fun onStop() {
         super.onStop()
-        // Clear Glide safely when activity stops
+        pauseGlideRequestsSafely()
+    }
+
+    override fun onDestroy() {
+        isDestroying = true
+        cleanupComponents()
+        super.onDestroy()
+    }
+
+    private fun pauseGlideRequestsSafely() {
         try {
             if (!isDestroying) {
                 Glide.with(this).pauseRequests()
@@ -139,35 +149,32 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         }
     }
 
-    override fun onDestroy() {
-        isDestroying = true
-
-        // Stop components before calling super.onDestroy()
+    private fun cleanupComponents() {
         try {
-            // Pass the isDestroying flag to AdRotator to prevent Glide calls
             adRotator.stop(isDestroying)
             timer.cleanup()
             soundManager.cleanup()
         } catch (e: Exception) {
-            // Log but don't crash
             e.printStackTrace()
         }
-
-        super.onDestroy()
     }
 
     override fun onItemClick(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-        if (isDestroying || !isValidClick(view, position)) return
+        if (shouldIgnoreClick(view)) return
 
         startGameIfNeeded()
         handleCardClick(view, position)
     }
 
-    private fun isValidClick(view: View, position: Int): Boolean {
-        return !gameWon &&
-                !isDestroying &&
-                view.getTag(R.id.is_animating) != true &&
-                adapter.getCurrentlyFlippedCount() < MAX_FLIPPED_CARDS
+    private fun shouldIgnoreClick(view: View): Boolean {
+        return isDestroying ||
+                gameWon ||
+                isViewAnimating(view) ||
+                adapter.getCurrentlyFlippedCount() >= MAX_FLIPPED_CARDS
+    }
+
+    private fun isViewAnimating(view: View): Boolean {
+        return view.getTag(R.id.is_animating) == true
     }
 
     private fun startGameIfNeeded() {
@@ -183,32 +190,36 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
 
         val wasRevealed = adapter.revealPosition(position)
         if (wasRevealed) {
-            view.setTag(R.id.is_animating, true)
+            markViewAsAnimating(view)
             soundManager.playFlip()
             animateCardFlip(view)
         }
     }
 
+    private fun markViewAsAnimating(view: View) {
+        view.setTag(R.id.is_animating, true)
+    }
+
     private fun animateCardFlip(view: View) {
         if (isDestroying) return
 
-        val flipOutAnimator = inflateAnimator(flipOutRes, view)
-        val flipInAnimator = inflateAnimator(flipInRes, view)
+        val flipOut = createAnimatorFor(flipOutAnimator, view)
+        val flipIn = createAnimatorFor(flipInAnimator, view)
 
-        view.setTag(R.id.is_animating, true)
         view.rotationY = 0f
 
-        flipOutAnimator.addListener(object : AnimatorListenerAdapter() {
+        flipOut.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
+                flipOut.removeListener(this)
                 if (!isDestroying) {
-                    flipInAnimator.start()
+                    flipIn.start()
                 }
-                flipOutAnimator.removeListener(this)
             }
         })
 
-        flipInAnimator.addListener(object : AnimatorListenerAdapter() {
+        flipIn.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
+                flipIn.removeListener(this)
                 if (!isDestroying) {
                     view.setTag(R.id.is_animating, false)
 
@@ -216,16 +227,15 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
                         processCardMatch()
                     }
                 }
-                flipInAnimator.removeListener(this)
             }
         })
 
-        flipOutAnimator.start()
+        flipOut.start()
     }
 
-    private fun inflateAnimator(base: Animator, target: View): Animator {
-        val clone = base.clone()
-        clone.setTarget(target)
+    private fun createAnimatorFor(baseAnimator: Animator, targetView: View): Animator {
+        val clone = baseAnimator.clone()
+        clone.setTarget(targetView)
         return clone
     }
 
@@ -271,9 +281,13 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     }
 
     private fun checkForGameCompletion() {
-        if (adapter.isGameComplete() && !gameWon && !isDestroying) {
+        if (canCompleteGame()) {
             completeGame()
         }
+    }
+
+    private fun canCompleteGame(): Boolean {
+        return adapter.isGameComplete() && !gameWon && !isDestroying
     }
 
     private fun completeGame() {
@@ -283,6 +297,7 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
         timer.stop()
         adRotator.stop()
         elapsedMillis = SystemClock.elapsedRealtime() - startTime
+
         saveCompletionTime()
         navigateToLeaderboard()
     }
@@ -300,55 +315,62 @@ class PlayActivity : AppCompatActivity(), AdapterView.OnItemClickListener {
     private fun saveCompletionTime() {
         Thread {
             try {
-                val client = HttpClientProvider.client
-                val jsonBody = "$elapsedMillis"
-                val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
-
-                val request = Request.Builder()
-                    .url(ApiConstants.SAVE_TIME)
-                    .post(requestBody)
-                    .addHeader("Content-Type", "application/json")
-                    .build()
-
-                client.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        if (!isDestroying) {
-                            runOnUiThread {
-                                showToast("Error: ${e.message}")
-                            }
-                        }
-                    }
-
-                    override fun onResponse(call: Call, response: Response) {
-                        if (!isDestroying) {
-                            // Read the response body in the background thread
-                            val result = response.body?.string().orEmpty()
-                            val isSuccessful = response.isSuccessful
-                            val responseCode = response.code
-
-                            // Now switch to UI thread with the data already read
-                            runOnUiThread {
-                                handleSaveResponse(result, isSuccessful, responseCode)
-                            }
-                        }
-                    }
-                })
+                val request = createSaveTimeRequest()
+                executeApiRequest(request)
             } catch (e: Exception) {
-                if (!isDestroying) {
-                    runOnUiThread {
-                        showToast("Error saving completion time")
-                    }
-                }
+                handleSaveError("Error saving completion time")
             }
         }.start()
     }
 
-    private fun handleSaveResponse(result: String, isSuccessful: Boolean, responseCode: Int) {
+    private fun createSaveTimeRequest(): Request {
+        val jsonBody = "$elapsedMillis"
+        val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
+
+        return Request.Builder()
+            .url(ApiConstants.SAVE_TIME)
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+    }
+
+    private fun executeApiRequest(request: Request) {
+        val client = HttpClientProvider.client
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                handleSaveError("Error: ${e.message}")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!isDestroying) {
+                    val responseBody = response.body?.string().orEmpty()
+                    val isSuccessful = response.isSuccessful
+                    val responseCode = response.code
+
+                    runOnUiThread {
+                        handleSaveResponse(responseBody, isSuccessful, responseCode)
+                    }
+                }
+            }
+        })
+    }
+
+    private fun handleSaveError(message: String) {
+        if (!isDestroying) {
+            runOnUiThread {
+                showToast(message)
+            }
+        }
+    }
+
+    private fun handleSaveResponse(responseBody: String, isSuccessful: Boolean, responseCode: Int) {
         if (isDestroying) return
 
-        val message = when {
-            isSuccessful && result == "saved" -> "Completion time saved!"
-            else -> "Error saving time: $responseCode"
+        val message = if (isSuccessful && responseBody == "saved") {
+            "Completion time saved!"
+        } else {
+            "Error saving time: $responseCode"
         }
         showToast(message)
     }

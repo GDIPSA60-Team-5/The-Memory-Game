@@ -21,105 +21,125 @@ import org.json.JSONObject
 import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
-    private val client = HttpClientProvider.client
-    private val apiUrl = ApiConstants.LOGIN
 
     private lateinit var loginBtn: AppCompatButton
     private lateinit var loginSpinner: View
-    private lateinit var enterUserName: EditText
-    private lateinit var enterPassword: EditText
+    private lateinit var usernameInput: EditText
+    private lateinit var passwordInput: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         supportActionBar?.hide()
         setContentView(R.layout.activity_login)
+        setupInsets()
+        initViews()
+        setupListeners()
+    }
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.login)) { v, insets ->
+    private fun setupInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.login)) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
-        }
-
-
-        loginBtn = findViewById(R.id.loginBtn)
-        loginSpinner = findViewById(R.id.loginSpinner)
-        enterUserName = findViewById(R.id.userName)
-        enterPassword = findViewById(R.id.password)
-
-        loginBtn.setOnClickListener {
-            val username = enterUserName.text.toString()
-            val password = enterPassword.text.toString()
-
-            if (username.isBlank() || password.isBlank()) {
-                Toast.makeText(this, "Username and password cannot be empty", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            toggleLoading(true)
-            sendDataToBackend(username, password)
         }
     }
 
-    private fun toggleLoading(isLoading: Boolean) {
+    private fun initViews() {
+        loginBtn = findViewById(R.id.loginBtn)
+        loginSpinner = findViewById(R.id.loginSpinner)
+        usernameInput = findViewById(R.id.userName)
+        passwordInput = findViewById(R.id.password)
+    }
+
+    private fun setupListeners() {
+        loginBtn.setOnClickListener {
+            val username = usernameInput.text.toString().trim()
+            val password = passwordInput.text.toString().trim()
+
+            if (validateInput(username, password)) {
+                performLogin(username, password)
+            }
+        }
+    }
+
+    private fun validateInput(username: String, password: String): Boolean {
+        return if (username.isEmpty() || password.isEmpty()) {
+            showToast("Username and password cannot be empty")
+            false
+        } else true
+    }
+
+    private fun performLogin(username: String, password: String) {
+        showLoading(true)
+        val requestBody = createLoginRequestBody(username, password)
+        val request = buildLoginRequest(requestBody)
+
+        HttpClientProvider.client.newCall(request).enqueue(LoginCallback())
+    }
+
+    private fun createLoginRequestBody(username: String, password: String): RequestBody {
+        val json = JSONObject().apply {
+            put("username", username)
+            put("password", password)
+        }.toString()
+
+        Log.d("LoginActivity", "Login request: username=[$username]")
+        return json.toRequestBody("application/json".toMediaType())
+    }
+
+    private fun buildLoginRequest(body: RequestBody): Request {
+        return Request.Builder()
+            .url(ApiConstants.LOGIN)
+            .post(body)
+            .addHeader("Content-Type", "application/json")
+            .build()
+    }
+
+    private fun showLoading(isLoading: Boolean) {
         runOnUiThread {
             loginBtn.isEnabled = !isLoading
             loginSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
-            loginBtn.text = if (isLoading) "" else "LOGIN TO PLAY"
+            loginBtn.text = if (isLoading) "" else getString(R.string.login_to_play)
         }
     }
 
-    private fun sendDataToBackend(username: String, password: String) {
-        val json = JSONObject()
-            .put("username", username)
-            .put("password", password)
-            .toString()
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
 
-        Log.d("DEBUG", "username=[$username], password=[$password]")
+    private fun navigateToFetchActivity() {
+        startActivity(Intent(this, FetchActivity::class.java))
+        finish()
+    }
 
-        val requestBody = json.toRequestBody("application/json".toMediaType())
+    private inner class LoginCallback : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            Log.e("LoginActivity", "Login request failed", e)
+            runOnUiThread {
+                showLoading(false)
+                showToast("Connection error: ${e.message}")
+            }
+        }
 
-        Log.d("DEBUG", json)
-
-        val request = Request.Builder()
-            .url(apiUrl)
-            .post(requestBody)
-            .addHeader("Content-Type", "application/json")
-            .build()
-
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("HTTP", "request failure", e)
+        override fun onResponse(call: Call, response: Response) {
+            response.use {
                 runOnUiThread {
-                    toggleLoading(false)
-                    Toast.makeText(this@LoginActivity, "Internet error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
+                    handleLoginResponse(it)
                 }
             }
+        }
+    }
 
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    val statusCode = it.code
-                    val errorBody = it.body?.string()
-
-
-                    runOnUiThread {
-                        toggleLoading(false)
-                        if (it.isSuccessful) {
-                            Toast.makeText(this@LoginActivity, "Login successful", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(this@LoginActivity, FetchActivity::class.java)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            Toast.makeText(
-                                this@LoginActivity,
-                                "Login failure: HTTP $statusCode\n$errorBody",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-            }
-        })
+    private fun handleLoginResponse(response: Response) {
+        if (response.isSuccessful) {
+            showToast("Login successful")
+            navigateToFetchActivity()
+        } else {
+            val errorMsg = response.body?.string().orEmpty()
+            showToast("Login failed: HTTP ${response.code}\n$errorMsg")
+        }
     }
 }

@@ -1,147 +1,131 @@
-# 🍉 The Memory Game — Setup & Task Guide
+# 🧠 The Memory Game Project
 
-Hi Team, here’s everything you need to test run the project, understand your assigned tasks, and follow proper GitHub workflow.
+This is a full-stack Android application built for the Android CA project, consisting of:
 
----
+- **TheMemoryGame_Android** – the memory card-matching game for Android.
+- **TheMemoryGame_Backend** – a C# .NET 8 REST API backend with leaderboard support and MySQL database integration.
 
-## ✅ How to Test Run the Application
 
-1. Go to the `TheMemoryGame_Backend/Models` folder.
+## 📁 Project Structure
+```
+📂 TheMemoryGame\_Android    → Android game frontend (Kotlin)
+📂 TheMemoryGame\_Backend    → ASP.NET Core Web API backend
+📄 DummyData.sql            → Sample MySQL data
+📄 .gitignore
+📄 README.md
+```
 
-2. Open `MyDbContext.cs` and find this line:
+## ⚙️ Prerequisites
 
-   ```csharp
-   "server=localhost;user=root;password=password;database=TheMemoryGame;"
+### Android App:
+- Android Studio
+- Minimum SDK: 24 (Android 7.0)
+- Internet connection (for image & advertisment calls)
+
+### Backend:
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
+- [MySQL 8+](https://dev.mysql.com/downloads/)
+- Visual Studio 2022+ or VS Code (optional)
+- Postman or any API testing tool (optional for testing endpoints)
+
+## 🛠️ Setup Instructions
+
+### 1. 🧩 Set up the Backend
+
+1. Open the `TheMemoryGame_Backend` folder.
+2. Open `appsettings.json` and **edit the database connection string** under `ConnectionStrings`:
+
+   ```json
+   {
+     "Logging": {
+       "LogLevel": {
+         "Default": "Information",
+         "Microsoft.AspNetCore": "Warning"
+       }
+     },
+     "AllowedHosts": "*",
+     "ConnectionStrings": {
+       "DefaultConnection": "server=localhost;database=TheMemoryGame;user=root;password=root;"
+     }
+   }
+
+🔧 Replace `server`, `user`, and `password` with your actual MySQL database configuration.
+
+3. Import `DummyData.sql` into your MySQL database:
+
+   ```bash
+   mysql -u root -p < DummyData.sql
    ```
 
-3. Change the `password` to match the password you've set in your MySQL Workbench.
+4. Run the backend API:
 
-4. Connect to your MySQL Workbench to ensure your MySQL server is running.
+   ```bash
+   cd TheMemoryGame_Backend
+   dotnet run
+   ```
 
-5. Run the backend application. This will automatically create the `TheMemoryGame` database in your MySQL Workbench.
+   The API should be available at `http://localhost:5178`.
 
-6. Populate the database tables by running the SQL commands inside `DummyData.sql`.
 
-7. Open the Android Studio frontend project and run the app. You should now be able to test the application end-to-end.
+### 2. 📱 Set up the Android App
+
+1. Open `TheMemoryGame_Android` in Android Studio.
+
+2. Make sure the device or emulator has internet access.
+
+3. In `ApiConstants.kt`, the base URL is hardcoded as:
+
+   ```kotlin
+   const val BASE_URL = "http://10.0.2.2:5178"
+   ```
+
+   🔧 **What is `10.0.2.2`?**
+   This IP points to your host machine when using the Android emulator. It works **only on the emulator**.
+
+   ⚠️ If you are testing on a **physical Android device**, replace it with your **computer's local IP address** (e.g., `http://192.168.x.x:5178`), and make sure both the device and your machine are on the same Wi-Fi network.
+
+4. Build and run the app.
+
+## 🎮 Game Features
+
+* 🃏 Match card pairs by flipping them
+* ⏱️ Countdown timer and match counter
+* 🔐 Login system for user sessions
+* 🖼️ Fetches card images from [StockSnap.io](https://stocksnap.io)
+* 🏆 Leaderboard with top 5 scores and personal rank
+* 🔊 Audio feedback and animations
+* 📢 Ad display based on user type (free or paid)
+
+
+
+## 🧪 Sample Test Credentials
+
+
+```
+Username: aung
+Password: aung123
+```
+
+
+
+## 📝 Notes
+
+* Ensure both the **backend API** and **MySQL** are running before launching the app.
+* `DummyData.sql` contains sample leaderboard records you can replace or expand.
+
+
+## 👨‍🏫 Checklist Before Running
+
+✅ Please ensure you:
+
+* Have MySQL installed and the connection string updated in `appsettings.json`
+* Import `DummyData.sql` to create and populate the database
+* Start the backend before testing the Android app
+* Use `dotnet run` in the `TheMemoryGame_Backend` folder to launch the API
+
+That's all. Thank you for checking our project!
+
 
 ---
 
-## 🚀 Tasks To Be Completed
-
-### 1. Overall UI Design — **Paul**
-
-* Design all screens and activities throughout the app.
-
-### 2. Login Activity — **Simba**
-
-* Create a login activity in Android Studio.
-* Use hashed passwords to store in the database (if possible).
-* After login, store the user object or at least the `UserId` in session for tracking logged-in users.
-
-### 3. Sound Effects and Animations — **Jingjia**
-
-* Add sound effects and animations for the following:
-
-  * Fetching and displaying images.
-  * When images are matched.
-  * When images are not matched.
-  * When the game is won and the app redirects to the leaderboard.
-
-### 4. Ads Display — **Zhangrui**
-
-* Display ads inside the Play Activity **only** if the logged-in user’s `UserType` in the database is `"free"`.
-* No ads should appear for `"paid"` users.
-* For free users, show a rectangular advertisement window at the bottom of the screen.
-* A new advertisement should load every 30 seconds during gameplay.
-
-### 5. Leaderboard Activity — **Haziq**
-
-* Complete the existing leaderboard functionality.
-* Extract the **Top 5** fastest completion times and display them in the leaderboard UI.
-* Extract and display the leaderboard rank of the current completion time after a game is completed.
-* Change the current hardcoded method of saving completion times — collaborate with Simba to:
-
-* Ensure the logged-in user’s `UserId` is used to store completion time in the `Record` table.
-
-**Note:**  
-Use `formatElapsedTime()` from the `TimeUtils` class to convert raw milliseconds into the readable time format used in the app.
-
----
-
-## 🛠 GitHub Workflow (Best Practices)
-
-Here’s the proper way to collaborate using Git:
-
-### 1. Clone the Repository
-
-```bash
-git clone repository_url
-```
-
-### 2. Set Upstream (Only needed if not automatically configured)
-
-```bash
-git remote add upstream repository_url
-```
-
-### 3. Create a New Feature Branch
-
-```bash
-git checkout -b branch_name
-```
-
-*Example:* `animation_and_audio`
-
-### 4. Develop Your Functions and Features
-
-### 5. Commit Changes Frequently
-
-```bash
-git add .
-git commit -m "Short, clear message about what you changed"
-```
-
-### 6. Check Repository Status
-
-```bash
-git status
-```
-
-### 7. Stay Up-to-Date with the Remote Repository
-
-If your repo is behind:
-
-```bash
-git fetch origin
-git rebase origin/main
-```
-
-*This places your local commits on top of the latest version from `main`.*
-
-### 8. Push Your Feature Branch to Remote
-
-```bash
-git push origin your_feature_branch_name
-```
-
-### 9. Create a Pull Request (PR)
-
-* Go to GitHub, create a PR from your feature branch to `main`.
-* A teammate will review your PR.
-
-### 10. Resolve Comments if Requested
-
-* If changes are requested, update your branch, push again, and resolve the review comments.
-
-### 11. Use Small, Incremental Updates
-
-* Avoid large, bundled commits. Smaller updates make reviews faster and reduce merge conflicts.
-
----
-
-## 💡 Final Notes
-
-* Communicate regularly on progress.
-* Test your features thoroughly before pushing.
-
-Good luck, team! Let’s make this project great. 🎉
+© 2025 The Memory Game CA Project

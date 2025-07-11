@@ -16,16 +16,19 @@ class MyCustomAdapter(
     private val filenames: Array<String>
 ) : ArrayAdapter<String>(context, R.layout.fetch_grid, filenames) {
 
+    // === Constants ===
     companion object {
         private const val MAX_FLIPPED_CARDS = 2
         private const val PLACEHOLDER_TAG = "placeholder"
         private const val REAL_IMAGE_TAG = "real_image"
     }
 
+    // === State ===
     private val revealedPositions = mutableSetOf<Int>()
     private val currentlyFlipped = mutableListOf<Int>()
     private val isGameMode = context is PlayActivity
 
+    // === View Binding ===
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: inflateView(parent)
         val cardFront = view.findViewById<ImageView>(R.id.cardFront)
@@ -43,9 +46,9 @@ class MyCustomAdapter(
     private fun bindCardState(position: Int, front: ImageView, back: ImageView, tick: ImageView) {
         val isRevealed = revealedPositions.contains(position)
         val isFlipped = currentlyFlipped.contains(position)
-        val shouldShowFront = !isGameMode || isRevealed || isFlipped
+        val showFront = !isGameMode || isRevealed || isFlipped
 
-        if (shouldShowFront) {
+        if (showFront) {
             front.visibility = View.VISIBLE
             back.visibility = View.GONE
             loadImageForPosition(position, front)
@@ -71,7 +74,6 @@ class MyCustomAdapter(
                     .into(imageView)
                 imageView.tag = REAL_IMAGE_TAG
             } catch (e: Exception) {
-                // Fallback to drawable if Glide fails
                 imageView.setImageResource(R.drawable.card_back)
                 imageView.tag = PLACEHOLDER_TAG
             }
@@ -81,24 +83,20 @@ class MyCustomAdapter(
         }
     }
 
+    // === Game Logic ===
     fun revealPosition(position: Int): Boolean {
-        return if (canFlipCard(position)) {
+        if (canFlipCard(position)) {
             currentlyFlipped.add(position)
-            notifyItemChanged(position)
-            true
-        } else false
-    }
-
-    private fun notifyItemChanged(position: Int) {
-        if (position in 0 until count) {
             notifyDataSetChanged()
+            return true
         }
+        return false
     }
 
     private fun canFlipCard(position: Int): Boolean {
         return currentlyFlipped.size < MAX_FLIPPED_CARDS &&
-                !currentlyFlipped.contains(position) &&
-                !revealedPositions.contains(position)
+                position !in currentlyFlipped &&
+                position !in revealedPositions
     }
 
     fun checkForMatch(): Boolean {
@@ -108,19 +106,20 @@ class MyCustomAdapter(
 
     fun finalizeMatch() {
         revealedPositions.addAll(currentlyFlipped)
-        clearCurrentlyFlipped()
+        clearFlippedCards()
     }
 
     fun resetFlipped() {
-        clearCurrentlyFlipped()
+        clearFlippedCards()
     }
 
-    private fun clearCurrentlyFlipped() {
+    private fun clearFlippedCards() {
         currentlyFlipped.clear()
         notifyDataSetChanged()
     }
 
+    // === Game Status ===
     fun getCurrentlyFlippedCount(): Int = currentlyFlipped.size
-    fun isGameComplete(): Boolean = revealedPositions.size == filenames.size
     fun getRevealedCount(): Int = revealedPositions.size
+    fun isGameComplete(): Boolean = revealedPositions.size == filenames.size
 }

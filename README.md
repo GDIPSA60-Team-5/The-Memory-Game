@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/MySQL-8+-blue" alt="MySQL 8+"/>
   </a>
   <a href="https://github.com/yourusername/TheMemoryGame/blob/main/LICENSE" target="_blank" rel="noopener">
-    <img src="https://img.shields.io/github/license/yourusername/TheMemoryGame" alt="License"/>
+    <img src="https://img.shields.io/github/license/GDIPSA60-Team-5/The-Memory-Game" alt="License"/>
   </a>
 </p>
 

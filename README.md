@@ -1,7 +1,5 @@
 <h1 align="center">🧠 FlipACard: Android Memory Game </h1>
-<p align="center">
-  <img src=".github/assets/preview.png" alt="Memory Game Preview" width="250" />
-</p>
+<img src=".github/assets/preview.png" alt="Memory Game Preview" width="100%" />
 
 
 <p align="center">
